@@ -126,7 +126,8 @@ Prometheus, Grafana and Wazuh are **separate services**, not Spring starters. Mo
 
 See [Observability](OBSERVABILITY.md), [Security Monitoring](SECURITY-MONITORING.md) and [ADR](adr/0001-observability-security-stack.md).
 
-\n## Integration delivery technology choices
+
+## Integration delivery technology choices
 
 The 92-entry roadmap is intentionally **not 92 Spring starters**. Keep provider SDKs inside isolated adapter modules/workers and add dependencies only when a provider implementation is actually tested:
 
@@ -138,4 +139,4 @@ The 92-entry roadmap is intentionally **not 92 Spring starters**. Keep provider 
 - **Kubernetes Java client** only in the advanced cluster module; prohibit cluster-admin default roles and unspecified namespaces.
 - **Spring Modulith contracts** for `integrationcatalog`, not one Spring module per external vendor by default.
 
-**Status:** these are target architecture decisions, not newly added Maven dependencies. See [INTEGRATIONS.md](INTEGRATIONS.md).\n
+**Status:** these are target architecture decisions, not newly added Maven dependencies. See [INTEGRATIONS.md](INTEGRATIONS.md).

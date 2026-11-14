@@ -173,7 +173,8 @@ package fr.oreostudios.monique.observability;
 
 **Current implementation status:** these module packages and contracts are design targets, not committed Java classes. The existing `pods`, `ai`, `api` and `security` packages have not been fully refactored into this Modulith structure.
 
-\n## Integration catalog / provider adapters (target refinement)
+
+## Integration catalog / provider adapters (target refinement)
 
 The earlier logical `integrations` entry is refined into a **public `integrationcatalog` SPI module** and internal provider implementations. The SPI owns immutable descriptors, capability names, version negotiation and provider scopes. It does **not** execute SSH, run a deployment, or grant policy approval. `execution` depends on the SPI, not concrete provider packages. Adapter implementations register with the SPI and are invoked by an approval-verified worker.
 
@@ -191,4 +192,4 @@ flowchart LR
 
 **No cycle rule:** the dotted runtime edge above is *not* a compile-time import. If implemented as Spring Modulith package roots, enforce it with `ApplicationModules.verify()` and `@ApplicationModule(allowedDependencies = ...)`. Provider drivers may not reference `ai.internal`, `policy.internal` or `execution.internal` and may not be invoked from controllers directly.
 
-See [Integration Architecture](INTEGRATION-ARCHITECTURE.md) and the [catalog](INTEGRATIONS.md).\n
+See [Integration Architecture](INTEGRATION-ARCHITECTURE.md) and the [catalog](INTEGRATIONS.md).

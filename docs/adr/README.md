@@ -5,4 +5,5 @@ Decisions are captured as append-only records. Each new decision must state its 
 | ADR | Status | Decision |
 |---|---|---|
 | [0001](0001-observability-security-stack.md) | Accepted as design direction; not implemented | Prometheus + Actuator/Micrometer as preferred metrics stack; optional Grafana and Wazuh |
-\n| [0002](0002-provider-integration-model.md) | Accepted as design direction; not implemented | Provider-aware account/Pod model and capability-based adapters across 92 roadmap integrations |\n
+
+| [0002](0002-provider-integration-model.md) | Accepted as design direction; not implemented | Provider-aware account/Pod model and capability-based adapters across 92 roadmap integrations |
