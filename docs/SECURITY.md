@@ -51,3 +51,14 @@
 
 References: [Wazuh components](https://documentation.wazuh.com/current/getting-started/components/index.html) · [Wazuh sizing](https://documentation.wazuh.com/current/quickstart.html) · [Spring Boot actuator security](https://docs.spring.io/spring-boot/reference/actuator/endpoints.html).
 
+\n## Third-party connector threat model (planned)
+
+- Treat provider URLs, webhooks, DNS targets, returned manifests and API responses as untrusted. Use explicit HTTPS endpoint allowlists, region scope, TLS pinning/verification, payload bounds, and network egress restrictions to prevent SSRF.
+- Each connector stores credentials in the vault by **reference** and requires a verified tenancy, region, product version and explicit capability scopes. Managed PaaS credentials must not unlock SSH/root actions.
+- Separate **inventory**, **configuration**, **deployment**, **migration**, and **destructive** capabilities; require approval for any write and elevated approval for deleting VMs, backups, domains, databases or firewall rules.
+- Cloud APIs may incur charges; quota and price/cost acknowledgment are part of a proposed plan. No plan automatically purchases or provisions resources based only on AI text.
+- Handle vendor rate limits and asynchronous accepted states. An HTTP 202 (or 200 with GraphQL errors) is not proof that a deployment or VM operation succeeded.
+- No unreviewed fallback from failed provider API calls to root shell commands. Unsupported features must be displayed as **unsupported**, never silently faked.
+- Separately verify DNS, public IP assignments, service continuity, persistence, backups and rollback when migrating across providers.
+
+See [Integration Architecture](INTEGRATION-ARCHITECTURE.md) and [ADR 0002](adr/0002-provider-integration-model.md).\n

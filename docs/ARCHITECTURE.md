@@ -117,6 +117,29 @@ flowchart TB
 
 See [Observability](OBSERVABILITY.md), [Security Monitoring](SECURITY-MONITORING.md), [Spring Modulith](SPRING-MODULITH.md), and [ADR 0001](adr/0001-observability-security-stack.md).
 
+## Provider and integration topology (target)
+
+Managed provider accounts, installed panels and SSH-managed Pods must be modeled as distinct resource classes. An AI agent never obtains a universal credential with unrestricted execution access.
+
+```mermaid
+flowchart TB
+  API["Spring Modulith control plane"] --> SPI["integrationcatalog public contracts"]
+  SPI --> SaaS["Managed accounts<br/>Scalingo · Railway · Render · Fly.io"]
+  SPI --> Panel["On-host platforms<br/>Pterodactyl · Coolify · Dokploy · Pelican"]
+  SPI --> Provider["Cloud/hosting providers<br/>Hetzner · OVHcloud · DigitalOcean"]
+  SPI --> DNS["DNS, certificate, network services"]
+  SPI --> RO["Read-only telemetry connectors"]
+  Panel --> Pod["Registered Pods / installed services"]
+  Provider --> VM["Provider-managed VM / IP allocations"]
+  API --> Policy["Plan / policy / approvals"]
+  Policy --> Jobs["Durable isolated execution workers"]
+  Jobs --> SPI
+```
+
+The SPI is a **capability and metadata boundary**, not an alternative authorization path. Provider API keys are scoped and resolved only by authorized workers. Scalingo is managed PaaS; it does not expose root SSH or general VPS installation capability. Cross-platform migration is a multi-resource workflow requiring data, environment, secrets, DNS and rollback validation.
+
+See [Integration Catalog](INTEGRATIONS.md), [Integration Architecture](INTEGRATION-ARCHITECTURE.md) and [ADR 0002](adr/0002-provider-integration-model.md).
+
 ## Quality attributes and trade-offs
 
 | Attribute | Target invariant | Verification |

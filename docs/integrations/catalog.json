@@ -1,0 +1,848 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-11-14",
+  "status": "ROADMAP_NOT_IMPLEMENTED",
+  "priorityMeaning": {
+    "P0": "foundation",
+    "P1": "common",
+    "P2": "expansion",
+    "P3": "specialized"
+  },
+  "interfaceMeaning": {
+    "official_api": "official API documentation identified",
+    "standard_api": "documented protocol/API; check provider compatibility",
+    "cli_protocol": "CLI operation requires isolated worker",
+    "ssh_cli": "SSH/CLI only; no verified public vendor REST API",
+    "evaluate": "compatibility/interface validation pending"
+  },
+  "integrations": [
+    {
+      "id": "pterodactyl",
+      "name": "Pterodactyl 1.x / 2.x",
+      "category": "Game & hosting panels",
+      "priority": "P0",
+      "interface": "official_api",
+      "documentation": "https://docs.pterodactyl.io/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "pelican",
+      "name": "Pelican Panel",
+      "category": "Game & hosting panels",
+      "priority": "P1",
+      "interface": "official_api",
+      "documentation": "https://pelican.dev/docs/panel/advanced/api-docs/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "amp",
+      "name": "CubeCoders AMP",
+      "category": "Game & hosting panels",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "pufferpanel",
+      "name": "PufferPanel",
+      "category": "Game & hosting panels",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "crafty",
+      "name": "Crafty Controller",
+      "category": "Game & hosting panels",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "multicraft",
+      "name": "Multicraft",
+      "category": "Game & hosting panels",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "tcadmin",
+      "name": "TCAdmin",
+      "category": "Game & hosting panels",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "cpanel",
+      "name": "cPanel / WHM",
+      "category": "Game & hosting panels",
+      "priority": "P1",
+      "interface": "official_api",
+      "documentation": "https://api.docs.cpanel.net/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "plesk",
+      "name": "Plesk",
+      "category": "Game & hosting panels",
+      "priority": "P1",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "directadmin",
+      "name": "DirectAdmin",
+      "category": "Game & hosting panels",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "hestiacp",
+      "name": "HestiaCP",
+      "category": "Game & hosting panels",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "aapanel",
+      "name": "aaPanel",
+      "category": "Game & hosting panels",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "cyberpanel",
+      "name": "CyberPanel",
+      "category": "Game & hosting panels",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "cloudpanel",
+      "name": "CloudPanel",
+      "category": "Game & hosting panels",
+      "priority": "P1",
+      "interface": "ssh_cli",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "webmin",
+      "name": "Webmin / Virtualmin",
+      "category": "Game & hosting panels",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "coolify",
+      "name": "Coolify",
+      "category": "Self-hosted PaaS & containers",
+      "priority": "P0",
+      "interface": "official_api",
+      "documentation": "https://coolify.io/docs/api/overview",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "dokploy",
+      "name": "Dokploy",
+      "category": "Self-hosted PaaS & containers",
+      "priority": "P1",
+      "interface": "official_api",
+      "documentation": "https://docs.dokploy.com/docs/api",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "portainer",
+      "name": "Portainer",
+      "category": "Self-hosted PaaS & containers",
+      "priority": "P1",
+      "interface": "official_api",
+      "documentation": "https://docs.portainer.io/api/docs",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "caprover",
+      "name": "CapRover",
+      "category": "Self-hosted PaaS & containers",
+      "priority": "P1",
+      "interface": "official_api",
+      "documentation": "https://caprover.com/docs/reference/api",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "easypanel",
+      "name": "Easypanel",
+      "category": "Self-hosted PaaS & containers",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "docker",
+      "name": "Docker Engine",
+      "category": "Self-hosted PaaS & containers",
+      "priority": "P0",
+      "interface": "official_api",
+      "documentation": "https://docs.docker.com/reference/api/engine/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "dockercompose",
+      "name": "Docker Compose",
+      "category": "Self-hosted PaaS & containers",
+      "priority": "P0",
+      "interface": "cli_protocol",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "podman",
+      "name": "Podman",
+      "category": "Self-hosted PaaS & containers",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "kubernetes",
+      "name": "Kubernetes",
+      "category": "Self-hosted PaaS & containers",
+      "priority": "P2",
+      "interface": "standard_api",
+      "documentation": "https://kubernetes.io/docs/reference/using-api/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "k3s",
+      "name": "K3s",
+      "category": "Self-hosted PaaS & containers",
+      "priority": "P2",
+      "interface": "standard_api",
+      "documentation": "https://docs.k3s.io/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "rancher",
+      "name": "Rancher",
+      "category": "Self-hosted PaaS & containers",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "nomad",
+      "name": "HashiCorp Nomad",
+      "category": "Self-hosted PaaS & containers",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "proxmox",
+      "name": "Proxmox VE",
+      "category": "Self-hosted PaaS & containers",
+      "priority": "P1",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "scalingo",
+      "name": "Scalingo",
+      "category": "Managed platforms / PaaS",
+      "priority": "P1",
+      "interface": "official_api",
+      "documentation": "https://developers.scalingo.com/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "railway",
+      "name": "Railway",
+      "category": "Managed platforms / PaaS",
+      "priority": "P1",
+      "interface": "official_api",
+      "documentation": "https://docs.railway.com/integrations/api",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "render",
+      "name": "Render",
+      "category": "Managed platforms / PaaS",
+      "priority": "P1",
+      "interface": "official_api",
+      "documentation": "https://render.com/docs/api",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "flyio",
+      "name": "Fly.io",
+      "category": "Managed platforms / PaaS",
+      "priority": "P1",
+      "interface": "official_api",
+      "documentation": "https://machines-api-spec.fly.dev/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "heroku",
+      "name": "Heroku",
+      "category": "Managed platforms / PaaS",
+      "priority": "P2",
+      "interface": "official_api",
+      "documentation": "https://devcenter.heroku.com/articles/platform-api-reference",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "vercel",
+      "name": "Vercel",
+      "category": "Managed platforms / PaaS",
+      "priority": "P2",
+      "interface": "official_api",
+      "documentation": "https://vercel.com/docs/rest-api",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "netlify",
+      "name": "Netlify",
+      "category": "Managed platforms / PaaS",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "digitaloceanapp",
+      "name": "DigitalOcean App Platform",
+      "category": "Managed platforms / PaaS",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "cloudrun",
+      "name": "Google Cloud Run",
+      "category": "Managed platforms / PaaS",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "azureappservice",
+      "name": "Azure App Service",
+      "category": "Managed platforms / PaaS",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "awsecs",
+      "name": "AWS ECS / Fargate",
+      "category": "Managed platforms / PaaS",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "hetznercloud",
+      "name": "Hetzner Cloud",
+      "category": "Cloud / VPS / dedicated",
+      "priority": "P0",
+      "interface": "official_api",
+      "documentation": "https://docs.hetzner.cloud/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "hetznerrobot",
+      "name": "Hetzner Robot dedicated",
+      "category": "Cloud / VPS / dedicated",
+      "priority": "P1",
+      "interface": "official_api",
+      "documentation": "https://docs.hetzner.cloud/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ovhcloud",
+      "name": "OVHcloud VPS / bare metal",
+      "category": "Cloud / VPS / dedicated",
+      "priority": "P1",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "scaleway",
+      "name": "Scaleway Instances",
+      "category": "Cloud / VPS / dedicated",
+      "priority": "P1",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "digitalocean",
+      "name": "DigitalOcean Droplets",
+      "category": "Cloud / VPS / dedicated",
+      "priority": "P1",
+      "interface": "official_api",
+      "documentation": "https://docs.digitalocean.com/products/droplets/reference/api/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "aws_ec2",
+      "name": "Amazon EC2",
+      "category": "Cloud / VPS / dedicated",
+      "priority": "P2",
+      "interface": "official_api",
+      "documentation": "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "linode",
+      "name": "Akamai / Linode",
+      "category": "Cloud / VPS / dedicated",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "vultr",
+      "name": "Vultr",
+      "category": "Cloud / VPS / dedicated",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "contabo",
+      "name": "Contabo",
+      "category": "Cloud / VPS / dedicated",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "oracle",
+      "name": "Oracle Cloud Infrastructure",
+      "category": "Cloud / VPS / dedicated",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "gce",
+      "name": "Google Compute Engine",
+      "category": "Cloud / VPS / dedicated",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "azurevm",
+      "name": "Azure Virtual Machines",
+      "category": "Cloud / VPS / dedicated",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "cloudflare",
+      "name": "Cloudflare DNS",
+      "category": "DNS / network / ingress",
+      "priority": "P0",
+      "interface": "official_api",
+      "documentation": "https://developers.cloudflare.com/api/resources/dns/subresources/records/methods/list/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "hetznerdns",
+      "name": "Hetzner DNS",
+      "category": "DNS / network / ingress",
+      "priority": "P1",
+      "interface": "official_api",
+      "documentation": "https://docs.hetzner.cloud/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "route53",
+      "name": "AWS Route 53",
+      "category": "DNS / network / ingress",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ovhdns",
+      "name": "OVHcloud DNS",
+      "category": "DNS / network / ingress",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "nginx",
+      "name": "NGINX",
+      "category": "DNS / network / ingress",
+      "priority": "P0",
+      "interface": "ssh_cli",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "caddy",
+      "name": "Caddy",
+      "category": "DNS / network / ingress",
+      "priority": "P1",
+      "interface": "ssh_cli",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "traefik",
+      "name": "Traefik",
+      "category": "DNS / network / ingress",
+      "priority": "P1",
+      "interface": "ssh_cli",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "npm",
+      "name": "Nginx Proxy Manager",
+      "category": "DNS / network / ingress",
+      "priority": "P1",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "haproxy",
+      "name": "HAProxy",
+      "category": "DNS / network / ingress",
+      "priority": "P2",
+      "interface": "ssh_cli",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "tailscale",
+      "name": "Tailscale",
+      "category": "DNS / network / ingress",
+      "priority": "P1",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "wireguard",
+      "name": "WireGuard",
+      "category": "DNS / network / ingress",
+      "priority": "P1",
+      "interface": "ssh_cli",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "letsencrypt",
+      "name": "Let's Encrypt / ACME",
+      "category": "DNS / network / ingress",
+      "priority": "P0",
+      "interface": "standard_api",
+      "documentation": "https://letsencrypt.org/docs/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "postgresql",
+      "name": "PostgreSQL",
+      "category": "Databases / storage / backup",
+      "priority": "P0",
+      "interface": "standard_api",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "mysql",
+      "name": "MySQL / MariaDB",
+      "category": "Databases / storage / backup",
+      "priority": "P0",
+      "interface": "standard_api",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "redis",
+      "name": "Redis / Valkey",
+      "category": "Databases / storage / backup",
+      "priority": "P1",
+      "interface": "standard_api",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "mongodb",
+      "name": "MongoDB",
+      "category": "Databases / storage / backup",
+      "priority": "P2",
+      "interface": "standard_api",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "s3",
+      "name": "Amazon S3",
+      "category": "Databases / storage / backup",
+      "priority": "P1",
+      "interface": "standard_api",
+      "documentation": "https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "r2",
+      "name": "Cloudflare R2",
+      "category": "Databases / storage / backup",
+      "priority": "P1",
+      "interface": "official_api",
+      "documentation": "https://developers.cloudflare.com/r2/api/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "minio",
+      "name": "MinIO",
+      "category": "Databases / storage / backup",
+      "priority": "P1",
+      "interface": "standard_api",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "backblazeb2",
+      "name": "Backblaze B2",
+      "category": "Databases / storage / backup",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "wasabi",
+      "name": "Wasabi",
+      "category": "Databases / storage / backup",
+      "priority": "P2",
+      "interface": "standard_api",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "restic",
+      "name": "restic",
+      "category": "Databases / storage / backup",
+      "priority": "P0",
+      "interface": "cli_protocol",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "borg",
+      "name": "BorgBackup",
+      "category": "Databases / storage / backup",
+      "priority": "P2",
+      "interface": "cli_protocol",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "rclone",
+      "name": "rclone",
+      "category": "Databases / storage / backup",
+      "priority": "P1",
+      "interface": "cli_protocol",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "pgbackrest",
+      "name": "pgBackRest",
+      "category": "Databases / storage / backup",
+      "priority": "P2",
+      "interface": "cli_protocol",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "github",
+      "name": "GitHub Actions",
+      "category": "DevOps / monitoring / security",
+      "priority": "P1",
+      "interface": "evaluate",
+      "documentation": "https://docs.github.com/en/rest/actions",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "gitlab",
+      "name": "GitLab CI/CD",
+      "category": "DevOps / monitoring / security",
+      "priority": "P1",
+      "interface": "official_api",
+      "documentation": "https://docs.gitlab.com/api/pipelines/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "forgejo",
+      "name": "Forgejo / Gitea",
+      "category": "DevOps / monitoring / security",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "jenkins",
+      "name": "Jenkins",
+      "category": "DevOps / monitoring / security",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "argocd",
+      "name": "Argo CD",
+      "category": "DevOps / monitoring / security",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "prometheus",
+      "name": "Prometheus",
+      "category": "DevOps / monitoring / security",
+      "priority": "P0",
+      "interface": "standard_api",
+      "documentation": "https://prometheus.io/docs/prometheus/latest/querying/api/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "grafana",
+      "name": "Grafana",
+      "category": "DevOps / monitoring / security",
+      "priority": "P1",
+      "interface": "standard_api",
+      "documentation": "https://grafana.com/docs/grafana/latest/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "wazuh",
+      "name": "Wazuh",
+      "category": "DevOps / monitoring / security",
+      "priority": "P2",
+      "interface": "standard_api",
+      "documentation": "https://documentation.wazuh.com/current/user-manual/api/index.html",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "uptimekuma",
+      "name": "Uptime Kuma",
+      "category": "DevOps / monitoring / security",
+      "priority": "P1",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "loki",
+      "name": "Grafana Loki",
+      "category": "DevOps / monitoring / security",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "alertmanager",
+      "name": "Prometheus Alertmanager",
+      "category": "DevOps / monitoring / security",
+      "priority": "P2",
+      "interface": "standard_api",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "sentry",
+      "name": "Sentry",
+      "category": "DevOps / monitoring / security",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "zabbix",
+      "name": "Zabbix",
+      "category": "DevOps / monitoring / security",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "crowdsec",
+      "name": "CrowdSec",
+      "category": "DevOps / monitoring / security",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "fail2ban",
+      "name": "Fail2ban",
+      "category": "DevOps / monitoring / security",
+      "priority": "P1",
+      "interface": "ssh_cli",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "n8n",
+      "name": "n8n",
+      "category": "DevOps / monitoring / security",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": null,
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    }
+  ]
+}

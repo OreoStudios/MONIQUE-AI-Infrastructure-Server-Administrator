@@ -126,3 +126,16 @@ Prometheus, Grafana and Wazuh are **separate services**, not Spring starters. Mo
 
 See [Observability](OBSERVABILITY.md), [Security Monitoring](SECURITY-MONITORING.md) and [ADR](adr/0001-observability-security-stack.md).
 
+\n## Integration delivery technology choices
+
+The 92-entry roadmap is intentionally **not 92 Spring starters**. Keep provider SDKs inside isolated adapter modules/workers and add dependencies only when a provider implementation is actually tested:
+
+- **Spring Web MVC + RestClient** for bounded JSON REST APIs (Coolify, Scalingo, Hetzner, DigitalOcean, Cloudflare, Portainer, Render and others); authentication per provider, never a global admin token.
+- **GraphQL client where justified** for Railway; parse GraphQL `errors` even on HTTP 200 and enforce schema/version compatibility.
+- **Official SDKs** only when mature and available for the target Java/worker runtime; prefer generated typed clients for vendor OpenAPI specs with contract tests.
+- **SSH/SFTP + restricted CLI worker** for approved host-local operations such as restic, Docker Compose, OS services and panel bootstrap when no official application API exists. No direct Docker daemon socket to the web process.
+- **AWS/S3-compatible client** for object storage, checking compatibility per provider (S3, R2, MinIO, Wasabi); encryption and key scope per bucket.
+- **Kubernetes Java client** only in the advanced cluster module; prohibit cluster-admin default roles and unspecified namespaces.
+- **Spring Modulith contracts** for `integrationcatalog`, not one Spring module per external vendor by default.
+
+**Status:** these are target architecture decisions, not newly added Maven dependencies. See [INTEGRATIONS.md](INTEGRATIONS.md).\n

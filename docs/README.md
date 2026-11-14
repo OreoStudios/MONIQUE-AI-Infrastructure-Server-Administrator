@@ -15,6 +15,13 @@ Document ID **MON-ARCH-001** · Revision **1.0** · Date **2026-11-14** · Statu
 
 Planned specifications not yet published: AI orchestration, durable execution/migrations, detailed API contracts and the full quality plan. References to those future documents are roadmap items, **not evidence of shipped functionality**.
 
+## Ecosystem integration specifications
+
+- [Integration Catalog](INTEGRATIONS.md) — 92 candidates across seven groups, grouped by planned priority and interface verification.
+- [Integration Architecture](INTEGRATION-ARCHITECTURE.md) — Pod vs connected-account model, adapter contracts, security and migration workflow diagrams.
+- [Machine-readable Registry](integrations/catalog.json) — versioned planning metadata; every entry is **not implemented**.
+- [ADR 0002](adr/0002-provider-integration-model.md) — why managed PaaS and host-root management require separate resource types.
+
 ### Language
 
 - **Pod:** one registered host/SSH endpoint; not Kubernetes.

@@ -100,6 +100,35 @@ The monitoring and security pipelines are separate trust domains. Prometheus and
 
 Read the engineering specifications: [Observability & Monitoring](docs/OBSERVABILITY.md) · [Wazuh & Security Monitoring](docs/SECURITY-MONITORING.md) · [Architecture](docs/ARCHITECTURE.md) · [Spring Modulith](docs/SPRING-MODULITH.md) · [Technology decision](docs/adr/0001-observability-security-stack.md).
 
+## Ecosystem integrations (roadmap — 92 candidates)
+
+MONIQUE is designed to manage more than Pterodactyl and Coolify. The catalog includes popular **self-hosted panels**, **managed application platforms**, **VPS/cloud providers**, **DNS/networking**, **databases/backups**, and **DevOps/security** tools.
+
+| Group | Priority integrations | Example use cases |
+|---|---|---|
+| **Game & hosting panels** | Pterodactyl, Pelican, cPanel/WHM, Plesk, CloudPanel, AMP | Manage game servers, users, websites, nodes, backups |
+| **Self-hosted PaaS** | Coolify, Dokploy, Portainer, CapRover, Docker Compose | Inspect/plan deployments, services, images and container migrations |
+| **Managed PaaS** | **Scalingo**, Railway, Render, Fly.io, Heroku, Vercel | Deploy apps, inspect logs, manage allowed scaling/actions |
+| **Cloud & dedicated** | Hetzner Cloud/Robot, OVHcloud, DigitalOcean, Scaleway, AWS EC2 | Discover/plan VPS provisioning, snapshots, IPs, firewalls |
+| **DNS & networking** | Cloudflare, Hetzner DNS, NGINX, Traefik, Caddy, Tailscale | Safe DNS cutovers, certificates, proxies and connectivity |
+| **Data & backups** | PostgreSQL, MySQL, Redis, MongoDB, S3, R2, restic, rclone | Backup/restore checks, replication and storage planning |
+| **DevOps & monitoring** | GitHub Actions, GitLab CI, Prometheus, Grafana, Wazuh, Uptime Kuma | Deployment diagnostics, health and security correlation |
+
+**Important distinction:** a **Pod is an SSH-managed server**; Scalingo, Railway and other hosted platforms are **connected service accounts**, not root-access Pods. Monique uses the officially supported API and the privileges granted by the user. No connector or migration action listed here is implemented merely by documenting it.
+
+```mermaid
+flowchart LR
+  User["Operator / MONIQUE AI"] --> Plan["Policy-checked plan & approval"]
+  Plan --> Registry["Provider capabilities registry"]
+  Registry --> Panels["Panels / Docker<br/>Pterodactyl · Coolify · Dokploy"]
+  Registry --> PaaS["Managed PaaS<br/>Scalingo · Railway · Render"]
+  Registry --> Cloud["Cloud and DNS<br/>Hetzner · DigitalOcean · Cloudflare"]
+  Registry --> Host["Restricted SSH worker<br/>Managed Pods"]
+  Registry --> Monitor["Read-only metrics/security<br/>Prometheus · Wazuh"]
+```
+
+**Full professional specifications:** [Integration Catalog](docs/INTEGRATIONS.md) · [Integration Architecture](docs/INTEGRATION-ARCHITECTURE.md) · [Machine-readable catalog](docs/integrations/catalog.json) · [ADR 0002](docs/adr/0002-provider-integration-model.md).
+
 ## Pod data model
 
 ```mermaid
