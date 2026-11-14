@@ -7,10 +7,13 @@ Document ID **MON-ARCH-001** · Revision **1.0** · Date **2026-11-14** · Statu
 1. [Architecture](ARCHITECTURE.md) establishes what the system does and does **not** trust.
 2. [Spring stack](SPRING-STACK.md) identifies supported frameworks, starter artifacts and decisions.
 3. [Spring Modulith](SPRING-MODULITH.md) specifies module contracts enforced by tests.
-4. [AI architecture](AI-ARCHITECTURE.md) distinguishes model reasoning from the execution authority.
-5. [Execution and migration](EXECUTION-AND-MIGRATIONS.md) describes operational safety.
-6. [Security](SECURITY.md), [data/APIs](DATA-AND-API.md) and [quality](QUALITY-AND-ROADMAP.md) define acceptance criteria.
-7. [ADRs](adr/README.md) record decisions for future maintainers.
+4. [Observability and Monitoring](OBSERVABILITY.md) defines Prometheus, Grafana, host exporters and signal freshness.
+5. [Security Monitoring](SECURITY-MONITORING.md) defines the optional Wazuh integration and detection workflow.
+6. [Security Model](SECURITY.md) defines the threat boundary and controls (including monitoring connectors).
+7. [Development](DEVELOPMENT.md) explains the prototype constraints.
+8. [Architectural Decision Records](adr/README.md) explain trade-offs.
+
+Planned specifications not yet published: AI orchestration, durable execution/migrations, detailed API contracts and the full quality plan. References to those future documents are roadmap items, **not evidence of shipped functionality**.
 
 ### Language
 
@@ -39,6 +42,12 @@ R6 — Each module owns its domain and persists through its own repository/API; 
 R7 — Support IPv4/IPv6 and multiple addresses per Pod while distinguishing discovered routes from user-entered metadata.
 
 R8 — The platform itself should not depend on the very host it is migrating.
+
+R9 — Missing, stale or unavailable metrics cannot be interpreted as healthy; mandatory pre-cutover evidence must be fresh.
+
+R10 — Wazuh detections and Prometheus alerts may inform an investigation but cannot directly grant write permission.
+
+R11 — Monitoring and security backends must be optional, separately deployable, and usable through least-privilege integrations.
 
 ### Documentation maintenance
 

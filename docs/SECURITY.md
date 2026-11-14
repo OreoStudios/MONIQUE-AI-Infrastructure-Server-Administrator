@@ -30,3 +30,24 @@
 3. A compromised database reveals ciphertext: AES-GCM protects stored credentials; an attacker with both DB and encryption key can decrypt them, so keys must be isolated.
 4. A leaked admin token grants access: store it off-device where possible, rotate on suspicion, and add RBAC/MFA before public deployment.
 5. A migration could destroy unrelated services: safe-mode inspect, versioned plans, protected resources, verification and explicit approval must precede execution.
+
+## Monitoring/security integrations — additional threat controls (planned)
+
+**These measures are not implemented.** Prometheus and Wazuh evidence must be treated as sensitive, untrusted inputs that **cannot authorize action**.
+
+| Risk | Control |
+|---|---|
+| Publicly exposed Node Exporter / Actuator endpoints | Private scrape network or authenticated reverse proxy, network ACLs; no Internet-wide access |
+| Credential exposure through metrics/logs | Bounded label sets, log redaction, scoped secret references, no credentials in telemetry |
+| SSRF through user/model-supplied Prometheus or Wazuh URLs | Admin-approved connector endpoints, DNS/IP egress policies, no arbitrary URLs in tool arguments |
+| Excessive PromQL / indexer queries | Allowed query templates, bounded time ranges, query budgets and response-size limits |
+| Injected commands in Wazuh alerts or remote logs | Treat all text as untrusted evidence; no prompt/system instruction escalation |
+| False-positive security incident | Source/severity/freshness confidence, cross-source corroboration and manual review |
+| Automatic active response causes outage | Wazuh active response / firewall lockdown **disabled by default**; explicit scoped change approval required |
+| Data unavailable during risky migration | Fail closed on required verification; label telemetry stale/unavailable and require alternative verified plan |
+| Monitoring stack becomes single point of failure | Isolated central services, independent control-plane heartbeat and tested restoration |
+
+**Wazuh sizing:** a quickstart single-host central stack with server, indexer and dashboard for 1–25 agents recommends 4 vCPU, 8 GiB RAM and 50 GB (90-day horizon). Treat these as vendor guidance, not a guaranteed fixed requirement; investigate current vendor documentation before provisioning.
+
+References: [Wazuh components](https://documentation.wazuh.com/current/getting-started/components/index.html) · [Wazuh sizing](https://documentation.wazuh.com/current/quickstart.html) · [Spring Boot actuator security](https://docs.spring.io/spring-boot/reference/actuator/endpoints.html).
+

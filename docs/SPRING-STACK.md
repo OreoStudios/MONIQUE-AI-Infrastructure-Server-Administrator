@@ -32,7 +32,7 @@ Versions use stable releases: **do not silently switch to Boot 4.2 / AI 2.1 rele
 | Spring AI OpenAI | `spring-ai-starter-model-openai` | **Next** | OpenAI chat-model orchestration |
 | Spring AI tool APIs | `ChatClient`, structured/tool callbacks | **Next** | Read-only bounded tools; write-capable tools remain policy-gated |
 | Spring AI MCP client | Spring AI MCP starter (confirm version and precise artifact before inclusion) | **Later** | MCP tool discovery with allowlist; not automatic blanket access |
-| Spring Boot Actuator | `spring-boot-starter-actuator` | **Next** | Health, metrics, readiness; restricted exposure |
+| Spring Boot Actuator | `spring-boot-starter-actuator` | **Next — planned** | Health, readiness, metrics; restricted endpoints |
 | Spring Observability | Micrometer + OpenTelemetry bridge | **Next** | Tracing, AI usage metrics and execution spans |
 | Spring Boot Flyway | `spring-boot-starter-flyway` + DB-specific module where required | **Next** | Versioned, audited schema; replace `schema.sql` |
 | Spring Data JDBC | `spring-boot-starter-data-jdbc` | **Evaluate** | Aggregate-focused persistence if JDBC boilerplate grows |
@@ -88,3 +88,41 @@ Do not instantiate AI provider beans at startup without handling missing API key
 - [Spring AI 2.0.x Getting Started](https://docs.spring.io/spring-ai/reference/getting-started.html)
 - [Anthropic starter](https://docs.spring.io/spring-ai/reference/api/chat/anthropic-chat.html)
 - [OpenAI starter](https://docs.spring.io/spring-ai/reference/api/chat/openai-chat.html)
+
+## Observability and threat-detection extensions
+
+**Build target, not yet added to the current `backend/pom.xml`.** These are integration dependencies for the **Spring control plane**, not components to package into the Java application itself.
+
+| Dependency / system | Maven coordinates or integration contract | Priority | Purpose |
+|---|---|---|---|
+| Spring Boot Actuator | `org.springframework.boot:spring-boot-starter-actuator` | First | `health`, `info`, `prometheus`, readiness/liveness, internal operational diagnostics |
+| Micrometer Prometheus | `io.micrometer:micrometer-registry-prometheus` | First | Publish metrics at `/actuator/prometheus`; private Prometheus scraping |
+| Micrometer tracing bridge | `io.micrometer:micrometer-tracing-bridge-otel` | Next | Associate web requests, model calls and durable job traces |
+| OpenTelemetry exporter | `io.opentelemetry:opentelemetry-exporter-otlp` | Next | Send sampled traces to a chosen collector/backend |
+| Prometheus HTTP API | Bounded read-only `/api/v1/query`, `/api/v1/query_range` connector | Next | Query metrics without granting arbitrary HTTP/SSRF capabilities to the model |
+| Grafana HTTP API | Least-privilege API service account / dashboard links | Optional | Provision/query dashboard metadata or link to a secure viewer |
+| Wazuh REST API | Version-aware read-only adapter | Optional | Manager/agent status, rules, FIM findings and security context |
+| Wazuh indexer search | Separate indexer credentials / approved queries only | Optional | Historical security alert retrieval beyond manager API |
+| Spring Modulith | `observability` and `securitymonitoring` logical modules | Next | Encapsulated adapters and normalized evidence APIs |
+
+**No Spring WebFlux requirement:** the existing MVC backend can perform bounded outbound REST calls and stream job progress via SSE. Introduce WebFlux only if a demonstrated concurrency/streaming need justifies it.
+
+**Minimal Maven additions (after testing the current backend build):**
+
+```xml
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+<dependency>
+  <groupId>io.micrometer</groupId>
+  <artifactId>micrometer-registry-prometheus</artifactId>
+</dependency>
+```
+
+**Endpoint principle:** Prometheus scrape exposure requires explicitly enabling that endpoint in configuration **and** firewall/authenticated network access. Expose `health` only as appropriate for uptime checks, and never publish `heapdump`, `env`, `logfile`, `configprops` or other sensitive Actuator endpoints publicly. Do not expose all actuator endpoints indiscriminately.
+
+Prometheus, Grafana and Wazuh are **separate services**, not Spring starters. Monique integrates with them via their supported interfaces; Grafana is not required to run PromQL queries.
+
+See [Observability](OBSERVABILITY.md), [Security Monitoring](SECURITY-MONITORING.md) and [ADR](adr/0001-observability-security-stack.md).
+

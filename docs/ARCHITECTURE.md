@@ -65,6 +65,58 @@ flowchart TB
 - The MVP can use one database instance and isolated workers. Cross-process jobs must use a real durable queue/claim mechanism (not in-memory futures).
 - Horizontal control-plane scaling is **deferred** until distributed locks and leasing are validated.
 
+## Monitoring and security data planes (target)
+
+MONIQUE uses **two independent sources of evidence**: a metrics data plane backed by Prometheus, and an optional security-detection data plane backed by Wazuh. Neither has direct execution authority. Grafana consumes metrics as a UI; it does not replace Prometheus storage or Wazuh detection.
+
+```mermaid
+flowchart TB
+  subgraph Control["MONIQUE private control plane"]
+    App["Spring Boot + Spring Modulith"]
+    Obs["observability module<br/>read-only query / alert normalization"]
+    Sec["securitymonitoring module<br/>findings / incident correlation"]
+    AI["Spring AI<br/>redacted investigation context"]
+    Policy["Policy + approved workflows"]
+    App --> Obs
+    App --> Sec
+    Obs --> AI
+    Sec --> AI
+    AI -->|"Suggested plan only"| Policy
+  end
+  subgraph Metrics["Metrics plane"]
+    Prom["Prometheus<br/>timeseries + alerts"]
+    Graf["Grafana<br/>optional dashboard"]
+    Graf -->|"Datasource queries"| Prom
+    Prom -->|"Private scrape"| CP["MONIQUE Actuator<br/>/actuator/prometheus"]
+    Prom -->|"Private scrape"| Export["Pod exporters"]
+  end
+  subgraph Security["Optional security plane"]
+    Agent["Pod Wazuh agents"]
+    Manager["Wazuh server / manager"]
+    Indexer["Wazuh indexer"]
+    WUI["Wazuh dashboard"]
+    Agent -->|"Authenticated encrypted agent channel"| Manager
+    Manager --> Indexer
+    WUI --> Indexer
+  end
+  Obs -->|"Bounded read-only PromQL API"| Prom
+  Sec -->|"Read-only Wazuh API / approved alert queries"| Manager
+  Sec -.->|"Read-only alert search, if configured"| Indexer
+  Policy --> Worker["Scoped execution worker<br/>separate approval boundary"]
+```
+
+**Observe vs. operate:** the observability and securitymonitoring modules gather *evidence*. The AI module can summarize findings but cannot invoke SSH or vendor write APIs. The workflow/policy boundary validates scopes, backups and approvals before any execution.
+
+**Infrastructure independence:** monitoring central services should run on separately provisioned or existing infrastructure; avoid installing the Wazuh central stack on a memory-constrained Pod already running Pterodactyl/Minecraft. Operators can connect a managed Prometheus/Grafana/Wazuh deployment without installing duplicate services.
+
+**Availability and failure semantics:** monitoring connectors have explicit `CONNECTED`, `DEGRADED`, `STALE`, `UNAVAILABLE` states. Metrics from an exporter that stopped reporting are **unknown**, not zero. High-risk changes that require health confirmation must block cutover when telemetry is stale or unavailable, unless an operator-approved alternative validation procedure exists. Independent external monitoring should alert if MONIQUE itself is down.
+
+**Network boundaries:** neither Prometheus exporter endpoints nor Wazuh management/indexer APIs may be exposed unauthenticated to the public Internet. Use VPN/private networks, TLS/mTLS or a suitable authenticated proxy, least-privilege credentials, per-Pod allowlists, and server-side request limits.
+
+**Data minimization:** labels must be bounded and never include job IDs, IP credentials, SSH keys, prompt text, arbitrary error messages or usernames. Wazuh alert bodies can contain sensitive paths, usernames and IPs, so sanitize and authorize access before storing or presenting summarized evidence to a language model.
+
+See [Observability](OBSERVABILITY.md), [Security Monitoring](SECURITY-MONITORING.md), [Spring Modulith](SPRING-MODULITH.md), and [ADR 0001](adr/0001-observability-security-stack.md).
+
 ## Quality attributes and trade-offs
 
 | Attribute | Target invariant | Verification |
@@ -74,7 +126,7 @@ flowchart TB
 | Durability | A process crash does not lose state of a job or silently re-run destructive steps | Worker crash fault injection |
 | Security | Raw credentials never reach AI providers, logs or client responses | DLP / redaction assertions |
 | Recoverability | Data backup is tested before destructive cutover | Restore drills, checksums and RPO report |
-| Observability | Job progress and failed preconditions visible in real time | SSE integration tests |
+| Observability | Job progress, monitoring freshness, failed preconditions and independent control-plane health visible | SSE, Prometheus query and stale-data failure tests |
 | Extensibility | Add adapter without referencing other module internals | Spring Modulith verification |
 
 **Non-goal for v1:** autonomous self-healing across production servers; orchestration of arbitrary root shell scripts; zero-downtime guarantees; built-in Kubernetes management; multi-region HA.

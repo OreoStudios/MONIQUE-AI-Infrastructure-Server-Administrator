@@ -10,6 +10,8 @@
 | `secrets` | Credential encryption, vault adapter, secret lifecycle | `CredentialRef`, `SecretAccessService` | `identity` |
 | `pods` | Host metadata, IPs, labels, enrollment | `PodDirectory`, `PodSummary`, `PodRegistered` | `identity`, `secrets` |
 | `inventory` | Sanitized observed host/services/ports, freshness | `HostInventoryQuery`, `InventoryRecorded` | `pods` |
+| `observability` | Prometheus metrics queries, normalization, freshness, monitoring alerts | `MonitoringQuery`, `MonitoringSignal` | `pods` |
+| `securitymonitoring` | Optional Wazuh integration, normalized findings and security correlation | `SecurityFindingReader`, `SecurityFinding` | `pods` |
 | `ai` | Prompt construction, provider router, plan drafting | `PlanningService`, `ProposedPlan` | `inventory`, `pods` |
 | `policy` | Capability scopes, protected services, risk scoring | `PlanPolicyService`, `PolicyDecision` | `identity`, `pods` |
 | `workflows` | Plans, approvals, job states, resource locks | `JobCoordinator`, `JobApproved` | `policy`, `pods` |
@@ -121,3 +123,53 @@ Add `spring-modulith-starter-test` to the test scope. Configure `@ApplicationMod
 - Sharing credential decrypted values via events or serialization.
 
 See [Architecture](ARCHITECTURE.md), [Execution](EXECUTION-AND-MIGRATIONS.md), [Spring stack](SPRING-STACK.md).
+
+## Monitoring bounded contexts
+
+Add **two** modules to the target Spring Modulith application. No monitoring or security adapter may hold a reference to `execution.internal` or invoke write-capable ports.
+
+| Target module | Owns | Public API surface | Allowed inward dependencies |
+|---|---|---|---|
+| `observability` | Metric-provider registration, bounded PromQL queries, metrics normalization, freshness and alerts | `MonitoringQuery`, `MetricSeries`, `MonitoringSignal`, `ConnectorHealth` | `pods` |
+| `securitymonitoring` | Wazuh manager/indexer connector metadata, read-only findings, incident correlation, risk evidence | `SecurityFindingReader`, `SecurityFinding`, `SecurityConnectorHealth` | `pods` |
+
+The **`ai` module** may depend on their public read-only query APIs to construct a redacted `InvestigationContext`, and **`policy`** may consider normalized evidence in a risk evaluation. The **`workflows`** module alone owns the approval/job lifecycle; evidence events may be consumed by `notifications` and `audit` through public event contracts. External monitoring platforms do not own Monique's job or approval state.
+
+```mermaid
+flowchart LR
+  Pods["pods public API"]
+  Obs["observability"]
+  Sec["securitymonitoring"]
+  AI["ai / investigation"]
+  Pol["policy / risk"]
+  Flow["workflows"]
+  Aud["audit event listener"]
+  Obs -->|"depends on"| Pods
+  Sec -->|"depends on"| Pods
+  AI -->|"read-only depends on"| Obs
+  AI -->|"read-only depends on"| Sec
+  Pol -->|"uses evidence API"| Obs
+  Pol -->|"uses evidence API"| Sec
+  Flow -->|"policy decision"| Pol
+  Flow -. "domain events" .-> Aud
+```
+
+The arrows above depict **Java API dependency** except the dotted event listener edge. This graph is intentionally separate from the orchestration runtime sequence; don't infer control-plane execution authority from a metrics read.
+
+**Enforcement example** (future refactoring, not yet present):
+
+```java
+// fr.oreostudios.monique.observability.package-info.java
+@org.springframework.modulith.ApplicationModule(allowedDependencies = "pods")
+package fr.oreostudios.monique.observability;
+```
+
+- `observability.internal.prometheus` implements a strictly read-only connector with timeout and query budgets.
+- `securitymonitoring.internal.wazuh` normalizes alert severity, evidence timestamp and Pod correlation without running Wazuh active-response operations.
+- `ai` sees sanitized DTOs only; it cannot deserialize connector credentials or raw indexer documents.
+- `policy` rejects stale signal-based assertions and validates protected-resource implications.
+- `ApplicationModules.of(MoniqueApplication.class).verify()` must fail for forbidden internal-package dependencies.
+- Contract tests cover disabled integrations, read-only permissions, malformed responses, partial outages and injection-bearing alert text.
+
+**Current implementation status:** these module packages and contracts are design targets, not committed Java classes. The existing `pods`, `ai`, `api` and `security` packages have not been fully refactored into this Modulith structure.
+

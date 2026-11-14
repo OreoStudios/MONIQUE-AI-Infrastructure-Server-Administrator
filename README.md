@@ -63,8 +63,42 @@ flowchart TB
 | **Execution workers** | Connect through SSH and service APIs; run narrowly scoped operations; record result and exit codes |
 | **PostgreSQL** | Durable metadata, plans, steps, jobs, approvals and audit events |
 | **Adapters** | Pterodactyl Panel/Wings, Coolify, Docker, reverse proxies, databases and system services |
+| **Monitoring & security connectors (planned)** | Prometheus metrics, Grafana dashboards, Wazuh findings, read-only normalization and incident correlation |
 
 **Design rule:** the AI provider does not receive raw SSH passwords or private keys. It receives inventories, redacted diagnostic outputs and the result of approved tools. Providers never connect directly to Pods.
+
+## Monitoring, Observability & Security Intelligence (planned)
+
+MONIQUE will combine **infrastructure telemetry** with **security findings**, without mistaking an AI-generated diagnosis for an authorized action. These are **target integrations**, not features already deployed in this repository.
+
+| Technology | Role | Deployment decision |
+|---|---|---|
+| **Spring Boot Actuator + Micrometer** | Control-plane health, latency, JVM, job and AI usage metrics | **Required instrumentation in the target backend** |
+| **Prometheus** | Scrape/store time-series data from Monique and approved exporters; serve PromQL queries | **Preferred monitoring backend**; connect to an existing instance or deploy separately |
+| **Grafana** | Dashboards, visualization and alert exploration | **Recommended, optional UI**; Monique does not depend on it to execute a job |
+| **Node Exporter** | CPU, RAM, disk and host-network telemetry for Linux Pods | **Optional, per Pod**, installed only after explicit approval |
+| **Wazuh** | Security event collection, rules, file integrity monitoring, vulnerabilities and intrusion signals | **Optional integration**; reuse an existing Wazuh installation or deploy a central stack separately |
+
+```mermaid
+flowchart LR
+  subgraph Hosts["Managed Pods"]
+    Exporters["Node Exporter / approved exporters"]
+    Agents["Optional Wazuh agents"]
+  end
+  Monique["MONIQUE · Spring Modulith"] -->|"Private /actuator/prometheus"| Prom["Prometheus"]
+  Prom -->|"Scrapes with restricted network access"| Exporters
+  Grafana["Grafana (optional)"] -->|"PromQL datasource"| Prom
+  Agents -->|"Encrypted agent events"| Wazuh["Wazuh server / indexer (optional)"]
+  Monique -->|"Read-only normalized metrics"| Prom
+  Monique -->|"Read-only normalized findings"| Wazuh
+  Monique --> Guard["Policy, approval & job execution"]
+```
+
+**Intelligent diagnosis example:** “Why is my Minecraft server crashing?” Monique can compare host memory trends, application health, and Wazuh findings (if connected), explain what the evidence supports, propose a verified remediation plan, and **request approval before changing the server**. Missing monitoring data is reported as *unknown*, never “healthy.”
+
+The monitoring and security pipelines are separate trust domains. Prometheus and Wazuh alerts **do not** grant permission to run commands; Grafana is a presentation layer, not the source of truth for approved infrastructure jobs. Keep the central Wazuh manager/indexer/dashboard off constrained Minecraft hosts when possible.
+
+Read the engineering specifications: [Observability & Monitoring](docs/OBSERVABILITY.md) · [Wazuh & Security Monitoring](docs/SECURITY-MONITORING.md) · [Architecture](docs/ARCHITECTURE.md) · [Spring Modulith](docs/SPRING-MODULITH.md) · [Technology decision](docs/adr/0001-observability-security-stack.md).
 
 ## Pod data model
 
@@ -300,7 +334,8 @@ The folder structure is a **roadmap** until the corresponding implementation fil
 - [ ] **Phase 4 — jobs:** Approval UI, durable steps, streaming logs, retries, audits and backups.
 - [ ] **Phase 5 — integrations:** Pterodactyl and Coolify install, inventory, backup and API operations.
 - [ ] **Phase 6 — migration:** Verified app/data moves, dry run, cutover, restoration and failure recovery.
-- [ ] **Phase 7 — hardening:** RBAC/MFA, concurrency, security testing, observability and deploy documentation.
+- [ ] **Phase 7 — hardening:** RBAC/MFA, concurrency, security testing and deployment hardening.
+- [ ] **Phase 8 — observability & security:** Actuator/Micrometer instrumentation, Prometheus integration, optional Grafana dashboards, per-Pod exporters and optional Wazuh integration, with correlation tests.
 
 Do not interpret an unchecked item as an already-shipped feature. Mark tasks complete only after implementation and verification.
 
