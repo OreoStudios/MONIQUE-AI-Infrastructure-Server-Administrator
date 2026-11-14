@@ -158,6 +158,26 @@ Kubernetes Services and Ingress/Gateway are **resources inside one integration**
 [Full design and compatibility requirements](KUBERNETES-NETWORKING.md). **No Java implementation currently exists.**
 
 
+## CLI, Desktop and entitlement boundaries (target)
+
+CLI, Tauri Desktop and Web Dashboard are **presentation clients**, not additional Spring Modulith infrastructure modules. They share the authenticated `/api` contracts, structured plan previews, job progress streams, and approval protocol.
+
+Add logical `licensing` and `usage` modules to the **customer-owned MONIQUE control plane**. The central Oreo Studios membership service is a separate trusted system, not a module that receives private Pod credentials:
+
+| Module | Owns | Public contract | Expected dependencies |
+|---|---|---|---|
+| `licensing` | Signed entitlement verification, activation state, bounded offline grace | `EntitlementQuery`, `FeatureAuthorization` | `identity`; external read-only license client |
+| `usage` | Feature quotas, AI usage and locally enforced budgets | `UsageRecorder`, `QuotaDecision` | `identity`, `licensing` |
+
+**Dependency direction:** `policy` can query public licensing/usage contracts for *product entitlement*, but `licensing` must not import `execution.internal`, `secrets.internal` or SSH adapters. A valid membership is **necessary for paid features**, never **sufficient** for remote writes. Existing `identity`, `policy`, `workflows` and `execution` remain authoritative.
+
+**Central billing:** the customer runtime **does not host Stripe secret keys**. The central account/billing system receives verified Stripe webhook events and issues signed entitlements. The local backend validates with pinned public keys and bounded expiry.
+
+**Rust desktop:** a Tauri-specific process supervisor may start/stop a packaged Java sidecar, but cannot invoke arbitrary shell commands, read raw secrets through front-end IPC or bypass plan approvals. It is not a Java module and does not create a second model-to-SSH execution path.
+
+See [DESKTOP-APP.md](DESKTOP-APP.md), [SELF-HOSTING-AND-CLI.md](SELF-HOSTING-AND-CLI.md), [LICENSING-AND-BILLING.md](LICENSING-AND-BILLING.md).
+
+
 ## Monitoring bounded contexts
 
 Add **two** modules to the target Spring Modulith application. No monitoring or security adapter may hold a reference to `execution.internal` or invoke write-capable ports.

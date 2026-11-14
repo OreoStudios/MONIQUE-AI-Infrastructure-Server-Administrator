@@ -32,6 +32,15 @@ Planned specifications not yet published: AI orchestration, durable execution/mi
 - [Kubernetes Networking](KUBERNETES-NETWORKING.md) — ClusterIP, NodePort, LoadBalancer, ExternalName, Ingress, Gateway API, K3s routing, RBAC and deployment safeguards.
 
 
+## Self-hosting, CLI, Desktop and licensing
+
+- [Self-hosting & CLI](SELF-HOSTING-AND-CLI.md) — run modes, shared API, sample future commands, local and remote behavior.
+- [Desktop (Tauri/Rust)](DESKTOP-APP.md) — native desktop shell, chat and Pod dashboard, sidecar lifecycle, local persistence and OS packaging.
+- [Membership & Licensing](LICENSING-AND-BILLING.md) — self-hosted paid subscriptions, entitlement verification and safe expiry.
+- [ADR 0004](adr/0004-self-hosted-cli-membership.md) — self-hosted monthly membership and CLI-first approach.
+- [ADR 0005](adr/0005-tauri-desktop-client.md) — Tauri desktop as a peer client to the CLI, not a duplicate backend.
+
+
 ### Language
 
 - **Pod:** one registered host/SSH endpoint; not Kubernetes.

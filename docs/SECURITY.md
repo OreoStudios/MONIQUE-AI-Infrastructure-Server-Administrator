@@ -65,6 +65,21 @@ References: [Wazuh components](https://documentation.wazuh.com/current/getting-s
 See [DATA-SERVICES.md](DATA-SERVICES.md), [ADR 0003](adr/0003-data-services-and-brokers.md).
 
 
+## Desktop, CLI, local-host and licensing security (planned)
+
+- A Tauri desktop frontend is a webview with strictly scoped capabilities: **no arbitrary shell execution, filesystem reads, sudo or SSH from React**. Rust supervisor code may start a **specific signed/trusted MONIQUE backend** and control its lifecycle, but not execute model-supplied commands.
+- A local HTTP backend must bind only to loopback (or a protected local IPC transport). Use unpredictable per-session authentication, request origin validation, secure CORS and CSRF controls as appropriate. Binding to `127.0.0.1` **alone is not a security boundary** against local malware or malicious websites.
+- Browser login should use OIDC Authorization Code + PKCE or device authorization as supported, with exact redirect URI and state verification; store tokens in OS-protected credential storage and use short-lived access credentials.
+- Do not let a desktop background process inherit unrestricted cloud provider or root SSH credentials. Secrets remain encrypted, process logs redacted and worker privileges restricted.
+- Signed installers, verified updates, bundle integrity, SBOM/release provenance and OS-specific packaging validation are required. Desktop updates may not silently overwrite a running migration or downgrade DB schema.
+- **Membership expiry:** block new paid AI/jobs, not read-only inventory, safe recovery, export of owned data or secure logout. Do not terminate validated in-flight operations mid-write due to lost subscription or a central outage.
+- Use short-lived, audience-bound signed entitlement tokens with public-key verification, clock skew rules and a bounded offline grace. A membership is **not authorization** to modify remote hosts.
+- Stripe secrets and webhook verification are central only; the desktop sends no SSH keys, private audit logs, raw database content or terminal history to licensing.
+- Local-runtime portability requires a real database design and encryption-key lifecycle; never silently move unencrypted SSH credentials between user profiles.
+
+See [Desktop](DESKTOP-APP.md), [Licensing](LICENSING-AND-BILLING.md).
+
+
 ## Third-party connector threat model (planned)
 
 - Treat provider URLs, webhooks, DNS targets, returned manifests and API responses as untrusted. Use explicit HTTPS endpoint allowlists, region scope, TLS pinning/verification, payload bounds, and network egress restrictions to prevent SSRF.

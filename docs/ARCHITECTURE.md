@@ -183,6 +183,45 @@ flowchart TB
 No public exposure claim without verified controller, externally routable IP/DNS, firewall and TLS health. Gateway API is preferred for new HTTP routing; the retired community ingress-nginx controller must not be a default installer. K3s Traefik/ServiceLB frequently uses 80/443, potentially conflicting with Coolify or Pterodactyl reverse proxies. See [Kubernetes Networking](KUBERNETES-NETWORKING.md).
 
 
+## Local-first delivery: CLI, Desktop and Server (target)
+
+MONIQUE has **three operator clients** using a single authorization and action contract: the terminal CLI, the **Tauri 2 / Rust / React desktop application**, and the optional web dashboard. A desktop app is **not a second infrastructure execution implementation**: it calls the Spring Boot API, which validates plans, policy, approvals, entitlements and durable job state.
+
+```mermaid
+flowchart TB
+  subgraph Devices["Operator device"]
+    CLI["CLI / PowerShell"]
+    Tauri["Tauri Desktop<br/>Rust + React"]
+    Web["Browser web dashboard"]
+    Supervisor["Rust sidecar supervisor<br/>process lifecycle only"]
+    Tauri --> Supervisor
+  end
+  subgraph Runtime["Local or remote customer-owned MONIQUE runtime"]
+    Core["Spring Boot + Modulith API"]
+    DB[("PostgreSQL + encrypted state")]
+    Jobs["Approval + durable jobs"]
+    Workers["Scoped execution workers"]
+    Core --> DB
+    Core --> Jobs
+    Jobs --> Workers
+  end
+  CLI -->|"Auth API / streaming"| Core
+  Tauri -->|"Auth API / streaming"| Core
+  Web -->|"HTTPS API / streaming"| Core
+  Supervisor -. "Start/status/stop local runtime only" .-> Core
+  Workers --> Hosts["Pods / provider APIs"]
+  Core -. "Entitlement verification only" .-> Licensing["Oreo Studios license service"]
+```
+
+**Local mode:** the desktop may supervise a packaged backend process through a narrowly scoped Tauri sidecar. Core and database remain on the customer machine. Its transport must be local-only, authenticated and bound against cross-origin/localhost attacks. A fully standalone installer needs a tested Java runtime and PostgreSQL persistence choice; the current backend must **not** be silently switched to SQLite. Direct desktop SSH is forbidden.
+
+**Server mode:** users run MONIQUE on their own always-on VPS; the Tauri app/CLI can connect over authenticated HTTPS. Server-side workers continue already approved jobs after the desktop closes. A purely local interactive runtime requires crash-recovery and explicit lifecycle management before any migration is offered.
+
+**Licensing trust boundary:** MONIQUE can require a monthly subscription for new premium operations, but membership status never replaces host authorization. An account or license outage must not abandon a running migration; read-only access, recovery and data export remain available. Private Pod credentials never go to Oreo Studios licensing/billing.
+
+See [Desktop](DESKTOP-APP.md), [Self-hosting & CLI](SELF-HOSTING-AND-CLI.md), [Licensing](LICENSING-AND-BILLING.md).
+
+
 ## Quality attributes and trade-offs
 
 | Attribute | Target invariant | Verification |

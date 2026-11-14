@@ -146,6 +146,19 @@ Prefer typed REST/CLI adapters in isolated workers for lifecycle operations, wit
 See [Data Services](DATA-SERVICES.md).
 
 
+## Desktop, CLI and licensing technology choice (target)
+
+- **Tauri 2** (`tauri` Rust runtime, React/TypeScript frontend): native desktop window, lifecycle supervisor, safe OS integration and cross-platform packaging. Tauri `bundle.externalBin` and the shell plugin can package and launch an allowed sidecar process; use explicit Tauri **capabilities/permission scopes**, never generic `shell:allow-execute` access to arbitrary commands.
+- **React/TypeScript shared components**: share Pod forms, chat and approval UI between the desktop and optional browser dashboard; do not duplicate authorization rules in UI.
+- **CLI**: optionally Spring Shell for an interactive Java client, or a lightweight separately packaged client calling the API. Avoid starting a full Java server for a read-only command when a remote API client is sufficient.
+- **Java 21 Spring Boot control plane**: remains the only operational policy and execution authority, whether running as a local supervised process or an always-on server. Packaging a Spring Boot JAR into a desktop sidecar is an engineering project; ship a tested Java runtime (e.g., jlink where compatible) or explicit installation prerequisites.
+- **PostgreSQL**: currently the backend's database. Local desktop must either install/supervise its own isolated PostgreSQL safely, connect to an existing PostgreSQL instance, or implement/test a truly portable persistence option in a separate architecture decision. **Do not claim the present JAR starts independently of PostgreSQL.**
+- **Membership validation**: ordinary outbound TLS client, signed entitlement verification in Spring, server-managed account subscriptions and webhooks; do not ship central Stripe secrets in Tauri or the customer CLI.
+- **BYOK AI**: supported provider API keys only; an AI subscription for another product is not a reusable API billing credential.
+
+See [Desktop](DESKTOP-APP.md), [Self-hosting & CLI](SELF-HOSTING-AND-CLI.md), [Licensing](LICENSING-AND-BILLING.md).
+
+
 ## Integration delivery technology choices
 
 The 92-entry roadmap is intentionally **not 92 Spring starters**. Keep provider SDKs inside isolated adapter modules/workers and add dependencies only when a provider implementation is actually tested:

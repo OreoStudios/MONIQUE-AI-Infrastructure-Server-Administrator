@@ -20,6 +20,40 @@ A Pod is **one machine / SSH endpoint**, not a Kubernetes Pod. Pods can have mul
 
 MONIQUE must **not** simply translate natural language into arbitrary root shell commands. The model proposes an action, a policy engine validates it, the operator approves high-risk changes, and dedicated workers execute and verify the result.
 
+## Run MONIQUE your way — CLI, Desktop or self-hosted server (planned)
+
+MONIQUE is designed to run **on your own computer or VPS**. The operator will choose a terminal interface, a native desktop program, or an always-on self-hosted server with an optional browser dashboard. **All interfaces use the same Spring Boot policy, approval and execution APIs**; a desktop window must not become a backdoor for unrestricted SSH.
+
+| Mode | Operator experience | How MONIQUE runs |
+|---|---|---|
+| **CLI** | `monique login`, `monique pod add`, `monique chat` in PowerShell, Bash or zsh | Local interactive runtime, or authenticated client to a self-hosted server |
+| **Desktop (Tauri 2 + Rust + React)** | Install an app on Windows/macOS/Linux; configure Pods, chat, see service status and approvals | Native shell supervises the **same** local Spring Boot runtime, or connects remotely |
+| **Self-hosted server** | 24/7 control plane, scheduled jobs, secure browser dashboard and remote CLI/Desktop clients | Customer-run Spring Boot, PostgreSQL and restricted workers on a managed machine |
+| **Web dashboard** | Browser UI for chat, Pods, integrations, monitoring and jobs | Optional presentation client to an existing server |
+
+```mermaid
+flowchart TB
+  CLI["MONIQUE CLI"] --> API["One MONIQUE API<br/>Spring Boot · Spring Modulith"]
+  Desktop["MONIQUE Desktop<br/>Tauri Rust + React"] --> API
+  Browser["Optional browser dashboard"] --> API
+  API --> DB[("Customer-owned database / encrypted secrets")]
+  API --> Policy["Policy / approval / durable jobs"]
+  Policy --> Workers["Scoped SSH and provider workers"]
+  Workers --> Pods["Customer Pods and connected providers"]
+  API -. "Signed entitlement verification only" .-> License["Oreo Studios licensing service"]
+```
+
+**The planned desktop app does not simply scrape terminal output.** It shares typed MONIQUE APIs with the CLI, so Pod management, AI conversations, planned operations, monitoring and approval history stay consistent. In fully local mode, Tauri would launch a packaged backend **sidecar**, with narrowly scoped Rust commands and local-only authenticated communication. The existing backend currently uses PostgreSQL; a one-click local installer needs a **verified database packaging or persistence strategy** first.
+
+### Monthly membership (planned)
+
+Customers keep control of **their runtime, SSH credentials, Pod inventory and infrastructure data** when self-hosting, while a MONIQUE monthly membership would unlock premium AI operations and integrations. Sign-in and license verification use Oreo Studios infrastructure; payments are handled centrally, not inside the customer runtime. AI can use **customer-owned API keys (BYOK)** or an optional metered Oreo Studios gateway—consumer Claude Code/ChatGPT subscriptions are **not** reused as backend API credentials.
+
+Expired membership must block **new paid operations**, not trap customer data or interrupt an in-progress migration. Preserve read-only access, backup/export, emergency recovery and a bounded signed offline grace period. **Prices, tier limits and grace duration are proposed, not finalized; no licensing enforcement is implemented.**
+
+**Engineering docs:** [Desktop application](docs/DESKTOP-APP.md) · [Self-hosting & CLI](docs/SELF-HOSTING-AND-CLI.md) · [Membership licensing](docs/LICENSING-AND-BILLING.md) · [ADR 0004](docs/adr/0004-self-hosted-cli-membership.md) · [ADR 0005](docs/adr/0005-tauri-desktop-client.md).
+
+
 ## Architecture at a glance
 
 ```mermaid
@@ -425,6 +459,7 @@ The folder structure is a **roadmap** until the corresponding implementation fil
 - [ ] **Phase 7 — hardening:** RBAC/MFA, concurrency, security testing and deployment hardening.
 - [ ] **Phase 8 — observability & security:** Actuator/Micrometer instrumentation, Prometheus integration, optional Grafana dashboards, per-Pod exporters and optional Wazuh integration, with correlation tests.
 - [ ] **Phase 9 — data services & messaging:** version-aware PostgreSQL, MySQL/MariaDB, Redis/Valkey, MongoDB, and RabbitMQ installers, verified backups/restores, secure networking and cross-Pod migration tests.
+- [ ] **Phase 10 — local-first delivery:** CLI for PowerShell/Bash/zsh; Tauri/Rust desktop application; remote/local runtime selection; signed installers; subscription licensing and billing integration, with safety and cross-platform tests.
 
 Do not interpret an unchecked item as an already-shipped feature. Mark tasks complete only after implementation and verification.
 
