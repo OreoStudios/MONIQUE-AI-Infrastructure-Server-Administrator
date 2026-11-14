@@ -44,6 +44,16 @@ flowchart TB
 
 **Avoid:** desktop launching a terminal then parsing `monique chat` text for critical state. CLI and Desktop should share **versioned JSON API contracts** (and SSE/websocket streams where justified). Common React components can be shared with the browser dashboard; never copy backend authorization into the UI.
 
+## One-click desktop installation (target release experience)
+
+**The customer must not manually install Java, PostgreSQL or an execution worker to use MONIQUE in supported local mode.** The Tauri installer will own a tested bundle/installation of the correct Java runtime, MONIQUE Core, isolated user-owned PostgreSQL, a restricted worker and local secret/IPC configuration, then verify actual readiness before enabling onboarding.
+
+The desktop first-run wizard handles **Oreo Studios sign-in/membership**, AI provider credentials (BYOK or eligible credits), Pod enrollment with SSH host-key verification, then the first read-only chat. Installation of MONIQUE's dependencies must never silently modify the user's other database services, open a public listener or enroll unrelated hosts.
+
+The first implementation milestone can remain **remote-client-only**, but the product's **local mode release gate is one-click dependency provisioning**. Tauri sidecar support alone does not package PostgreSQL, and claiming one-click local readiness is not allowed until cross-platform stateful storage, updates and recovery pass tests.
+
+See [Installation & Onboarding](INSTALLATION-AND-ONBOARDING.md).
+
 ## Two runtime modes
 
 ### Mode A: connect to a MONIQUE self-hosted server (first desktop milestone)
@@ -109,7 +119,7 @@ This layout is a **roadmap**, not an assertion that files/directories already ex
 | D4 | Bundled local backend sidecar and Java runtime | Signed sidecar, safe lifecycle, readiness and startup tests |
 | D5 | Local PostgreSQL strategy and safe migration | Storage portability, backups, encryption-key lifecycle |
 | D6 | Subscription/account interface | Signed entitlement, offline grace, expiry-safe jobs |
-| D7 | Distributable installers and updates | Windows NSIS/MSI, macOS signed/notarized bundles, Linux AppImage/deb/rpm as applicable |
+| D7 | One-click desktop installers and updates | Windows NSIS/MSI, macOS signed/notarized bundles, Linux AppImage/deb/rpm; auto-provision/verify Core, Java, PostgreSQL and workers |
 
 **Acceptance criteria:**
 - [ ] User can chat with MONIQUE and manage Pods **without a separate terminal window**.
@@ -117,7 +127,7 @@ This layout is a **roadmap**, not an assertion that files/directories already ex
 - [ ] A compromised React view cannot invoke arbitrary shell/SSH through Tauri.
 - [ ] Local backend never binds to a public interface by default.
 - [ ] Remote mode uses TLS and cannot downgrade to plain HTTP.
-- [ ] Local mode database, Java, vault and worker lifecycle survive app restart.
+- [ ] Local mode automatically provisions database, Java, vault and worker on first installation without manual dependency setup; lifecycle survives app restart.
 - [ ] Closing Desktop never silently abandons a partially completed migration.
 - [ ] License expiry preserves read-only/recovery/export functionality.
 - [ ] All release platforms and signed update paths tested.

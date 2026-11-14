@@ -45,6 +45,28 @@ flowchart TB
 
 **The planned desktop app does not simply scrape terminal output.** It shares typed MONIQUE APIs with the CLI, so Pod management, AI conversations, planned operations, monitoring and approval history stay consistent. In fully local mode, Tauri would launch a packaged backend **sidecar**, with narrowly scoped Rust commands and local-only authenticated communication. The existing backend currently uses PostgreSQL; a one-click local installer needs a **verified database packaging or persistence strategy** first.
 
+### One installer, automatically managed components (target)
+
+**Customers install MONIQUE once—not Java, PostgreSQL and workers separately.** The normal supported experience will be:
+
+**Download → Install → Sign in / activate membership → Configure AI → Add your first Pod → Chat with MONIQUE.**
+
+The desktop installer should provision its compatible Java runtime, local PostgreSQL data store, restricted execution worker, secure local communication and required schema automatically. A separate VPS/server bootstrap should provision the Core, persistent PostgreSQL, worker, and optional browser dashboard as a single verified stack. Internal components may remain separate processes/containers for reliability; installation is still **one guided product setup**.
+
+```mermaid
+flowchart LR
+  Install["MONIQUE Installer"] --> Setup["Auto-provision Core + Java<br/>PostgreSQL + worker"]
+  Setup --> Verify{"Health checks pass?"}
+  Verify -->|"Yes"| Login["Sign in + license"]
+  Login --> Wizard["Add Pod + configure AI"]
+  Wizard --> Chat["MONIQUE ready"]
+  Verify -->|"No"| Repair["Repair / resume with diagnostics"]
+```
+
+Do not silently require administrator privileges, open public ports, overwrite an existing database, or install services on customer Pods. **Fully local one-click packaging still requires implementation and cross-platform validation**; the current prototype does not deliver it.
+
+See the full [Installation & Onboarding Specification](docs/INSTALLATION-AND-ONBOARDING.md).
+
 ### Monthly membership (planned)
 
 Customers keep control of **their runtime, SSH credentials, Pod inventory and infrastructure data** when self-hosting, while a MONIQUE monthly membership would unlock premium AI operations and integrations. Sign-in and license verification use Oreo Studios infrastructure; payments are handled centrally, not inside the customer runtime. AI can use **customer-owned API keys (BYOK)** or an optional metered Oreo Studios gateway—consumer Claude Code/ChatGPT subscriptions are **not** reused as backend API credentials.

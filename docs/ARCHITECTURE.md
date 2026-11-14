@@ -222,6 +222,29 @@ flowchart TB
 See [Desktop](DESKTOP-APP.md), [Self-hosting & CLI](SELF-HOSTING-AND-CLI.md), [Licensing](LICENSING-AND-BILLING.md).
 
 
+## Installation orchestrator and deployment units (target)
+
+**One installer does not mean one process.** MONIQUE Core (Spring Boot/Modulith), PostgreSQL, restricted execution workers and optional dashboard can remain separately isolated and versioned. The **installer** orchestrates their lifecycle, wiring, configuration and readiness so that the customer performs **one installation**, not one setup per service.
+
+```mermaid
+flowchart TB
+  Installer["Signed MONIQUE Installer / Server bootstrap"] --> Preflight["Compatibility + storage + privileges"]
+  Preflight --> Core["Core + compatible Java runtime"]
+  Preflight --> Db["Private persistent PostgreSQL"]
+  Preflight --> Worker["Restricted execution worker"]
+  Preflight --> UI["Tauri Desktop or optional web dashboard"]
+  Core --> Health["Readiness verification"]
+  Db --> Health
+  Worker --> Health
+  UI --> Health
+  Health -->|"All pass"| Onboard["Sign-in, membership, AI, first Pod wizard"]
+  Health -->|"Fail"| Recovery["Repair / resume, data preserved"]
+```
+
+A local desktop install must manage user-scoped storage and authenticated local communication; a server installation can use a reviewed, pinned Compose bundle and HTTPS reverse proxy. Support explicit privilege consent, no accidental public DB exposure, idempotent upgrades/repairs, and never delete existing customer-owned data when a dependency fails.
+
+**No automatic deployment to registered Pods:** the installer provisions MONIQUE's own internals only; later server/Pod changes still require authorization, plans and approvals. Standalone local packaging depends on a thoroughly tested PostgreSQL strategy; see [Installation](INSTALLATION-AND-ONBOARDING.md).
+
 ## Quality attributes and trade-offs
 
 | Attribute | Target invariant | Verification |

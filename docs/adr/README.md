@@ -10,3 +10,4 @@ Decisions are captured as append-only records. Each new decision must state its 
 | [0003](0003-data-services-and-brokers.md) | Accepted design / not implemented | Database, cache and message broker lifecycle boundaries |
 | [0004](0004-self-hosted-cli-membership.md) | Accepted design direction; not implemented | Self-hosted CLI and monthly membership licensing |
 | [0005](0005-tauri-desktop-client.md) | Accepted design direction; not implemented | Tauri Rust desktop with shared API and safe local backend sidecar |
+| [0006](0006-one-install-managed-components.md) | Accepted as target product experience; not implemented | One customer installer provisions internal Core, PostgreSQL, workers and UI safely |

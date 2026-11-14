@@ -80,6 +80,21 @@ See [DATA-SERVICES.md](DATA-SERVICES.md), [ADR 0003](adr/0003-data-services-and-
 See [Desktop](DESKTOP-APP.md), [Licensing](LICENSING-AND-BILLING.md).
 
 
+## Installer/bootstrap security controls (target)
+
+The one-click product setup is an **orchestrator of approved local dependencies**, not blanket permission to modify the operator's operating system or registered Pods.
+
+- Verify signed installer, sidecar binaries, Java runtime and component release manifest checksums before launch.
+- Default to user-scoped filesystem permissions, non-admin services and private PostgreSQL/worker endpoints; request OS elevation only when a specific approved installation step requires it.
+- Generate per-install encryption keys and random connection secrets; ensure no secrets appear in installer logs, subprocess arguments, readable config files or telemetry.
+- Preflight against preexisting PostgreSQL instances, Docker containers, ports and data directories. Never take ownership of or overwrite unrelated services.
+- Bootstrap schema through versioned migrations, with backup and downgrade/recovery checks; failure must leave a repairable installation rather than corrupting state.
+- A desktop WebView or CLI prompt cannot use generic root/PowerShell commands to repair setup. All privileged actions must be signed, fixed-scope operations.
+- One-click server setup may optionally configure TLS/firewall/service startup only after operator consent and verification; never claim public HTTPS is ready without a valid certificate.
+- Uninstall removes binaries by default while retaining customer data/credentials/backups unless they explicitly select and authorize data deletion.
+
+See [Installation & Onboarding](INSTALLATION-AND-ONBOARDING.md).
+
 ## Third-party connector threat model (planned)
 
 - Treat provider URLs, webhooks, DNS targets, returned manifests and API responses as untrusted. Use explicit HTTPS endpoint allowlists, region scope, TLS pinning/verification, payload bounds, and network egress restrictions to prevent SSRF.

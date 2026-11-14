@@ -70,6 +70,16 @@ Model access depends on your provider account and selected model name; override 
 
 Backend unit tests cover authenticated credential encryption and IP validation. Build and test commands are provided, but CI success must be checked in GitHub Actions; a committed implementation is not proof that it has been deployed.
 
+## Distribution requirement: automatic dependencies, not developer setup (planned)
+
+The **development preview** documented above currently requires Docker Compose (or Java + PostgreSQL for manual backend development). That does **not** define the supported end-user installation experience.
+
+For a production release, users should download one signed Tauri installer or run one guided VPS bootstrap. The installer is responsible for provisioning the compatible Java runtime, Spring Core, PostgreSQL, restricted worker, secrets and private network endpoints. The final setup wizard handles Oreo Studios account/membership, AI provider selection and Pod enrollment.
+
+**Release must not be labeled one-click until** clean OS installs, health checks, database backup/restart, worker lifecycle, failure recovery and safe upgrades all pass. Admin/root elevation must be explicit and narrowly scoped; no silent Docker installation or destructive database overwrite. Remote Desktop/CLI clients connecting to a server need no local Core or database.
+
+Full requirements: [Installation & Onboarding](INSTALLATION-AND-ONBOARDING.md).
+
 ## Planned CLI + desktop distribution (NOT implemented)
 
 The existing commands earlier in this document describe a **development preview**, not a working public installer. The proposed user-facing distribution will offer:

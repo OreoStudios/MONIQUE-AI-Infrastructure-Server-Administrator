@@ -37,6 +37,20 @@ flowchart LR
 
 The CLI can open the desktop client via a future `monique desktop` command, but the desktop **must use the typed API rather than parse CLI stdout**. Shared DTOs, job IDs, confirmation fingerprints and error codes prevent different UI behavior.
 
+## The customer installs one product, not each service (target)
+
+MONIQUE's deployment diagram includes Core, PostgreSQL, workers and UI components, but those are **installer-managed internal components**. A normal supported installation must not ask a customer to install Java, run PostgreSQL commands or configure the worker individually.
+
+- **Desktop Local:** a signed Tauri installer provisions the matching Java runtime, local PostgreSQL data directory, MONIQUE Core, restricted worker and authenticated local IPC; verifies health; then starts the sign-in + membership + AI + Pod setup wizard.
+- **Self-hosted Server:** one guided bootstrap flow checks system prerequisites, provisions the approved Core/PostgreSQL/worker stack (and optional web dashboard), sets up secrets, data volumes, update policy, and authenticated HTTPS if configured; tests readiness. Docker installation or privileges must be handled with explicit consent rather than assumed.
+- **Remote Client:** install only the CLI/Desktop app, connect over TLS to an existing MONIQUE server; **no local backend or database is installed**.
+
+It may still be three internal processes/containers, but installation and upgrades are managed centrally through MONIQUE's installer. Never pretend setup succeeded if one component is unhealthy. On failure, leave a repairable installation without destroying preexisting customer data.
+
+**Product journey:** Download → Install → Sign in & activate membership → Choose AI provider → Add first Pod → Read-only diagnostics/chat.
+
+See [Installation & Onboarding](INSTALLATION-AND-ONBOARDING.md).
+
 ## CLI planned contract
 
 ```powershell
@@ -56,7 +70,7 @@ The commands above are **illustrative only**. `pod add` prompts for hostname/IP,
 
 **Current prototype uses Spring JDBC + PostgreSQL**, not a portable embedded DB. A true offline desktop runtime requires a tested strategy: provision a local user-scoped PostgreSQL service, attach to an explicitly configured existing PostgreSQL, or separately design and validate a storage abstraction/migration to another local database. Do **not** switch databases implicitly to make a packaging claim.
 
-A Java 21 runtime must also be packaged or clearly required, and startup/shutdown/recovery must be tested on Windows/macOS/Linux. Local mode must never bind to public interfaces or install system services without consent. A terminal exit must not leave an approved migration half-complete.
+For supported one-click local releases, a compatible Java 21 runtime **must be automatically packaged/provisioned** (not manually required), and startup/shutdown/recovery must be tested on Windows/macOS/Linux. Local mode must never bind to public interfaces or install system services without consent. A terminal exit must not leave an approved migration half-complete.
 
 ## Proposed packaging
 

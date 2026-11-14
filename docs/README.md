@@ -41,6 +41,10 @@ Planned specifications not yet published: AI orchestration, durable execution/mi
 - [ADR 0005](adr/0005-tauri-desktop-client.md) — Tauri desktop as a peer client to the CLI, not a duplicate backend.
 
 
+## One-click installation and onboarding
+
+- [Installation & Onboarding](INSTALLATION-AND-ONBOARDING.md) — installer-owned Java/Core, PostgreSQL, restricted worker, secure setup, readiness verification, membership and Pod wizard.
+
 ### Language
 
 - **Pod:** one registered host/SSH endpoint; not Kubernetes.
