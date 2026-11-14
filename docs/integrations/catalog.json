@@ -230,7 +230,23 @@
       "priority": "P2",
       "interface": "standard_api",
       "documentation": "https://kubernetes.io/docs/reference/using-api/",
-      "status": "ROADMAP_NOT_IMPLEMENTED"
+      "status": "ROADMAP_NOT_IMPLEMENTED",
+      "plannedCapabilities": [
+        "cluster.discover",
+        "namespaces.list",
+        "workload-pods.list",
+        "services.clusterip",
+        "services.nodeport",
+        "services.loadbalancer",
+        "services.externalname",
+        "endpointslices.read",
+        "ingress.inspect",
+        "gatewayapi.inspect",
+        "gatewayapi.httproute",
+        "networking.validate",
+        "external-traffic.verify"
+      ],
+      "implementationNote": "PLANNED ONLY. RBAC-scoped APIs, verified controller/CRDs and read-only-first enrollment. Gateway support requires selected controller."
     },
     {
       "id": "k3s",
@@ -239,7 +255,23 @@
       "priority": "P2",
       "interface": "standard_api",
       "documentation": "https://docs.k3s.io/",
-      "status": "ROADMAP_NOT_IMPLEMENTED"
+      "status": "ROADMAP_NOT_IMPLEMENTED",
+      "plannedCapabilities": [
+        "cluster.discover",
+        "namespaces.list",
+        "workload-pods.list",
+        "services.clusterip",
+        "services.nodeport",
+        "services.loadbalancer",
+        "services.externalname",
+        "endpointslices.read",
+        "ingress.inspect",
+        "gatewayapi.inspect",
+        "gatewayapi.httproute",
+        "networking.validate",
+        "external-traffic.verify"
+      ],
+      "implementationNote": "PLANNED ONLY. RBAC-scoped APIs, verified controller/CRDs and read-only-first enrollment. Gateway support requires selected controller."
     },
     {
       "id": "rancher",

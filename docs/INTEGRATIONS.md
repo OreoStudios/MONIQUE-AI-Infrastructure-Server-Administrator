@@ -234,6 +234,15 @@ Every SQL, NoSQL, cache, broker, search/vector or managed database integration m
 
 See [DATA-SERVICES.md](DATA-SERVICES.md) and [ADR 0003](adr/0003-data-services-and-brokers.md).
 
+## Kubernetes and K3s traffic routing (target capabilities)
+
+Kubernetes/K3s already appear in this catalog. The following features are **resource capabilities within those integrations**, rather than additional external providers: `services.clusterip.read/create/update`, `services.nodeport.read/create/update`, `services.loadbalancer.read/create/update`, `services.externalname.read/create/update`, `ingress.inspect/plan`, `gateway.inspect/plan`, `httproute.inspect/plan`, and controller/EndpointSlice health checks.
+
+Write operations remain **not implemented**. Scope credentials to namespaces, check controller/CRD support, external IP/port/firewall/TLS status, and block unsupported or unsafe actions. `Ingress` requires a controller; the community **ingress-nginx project is retired** and should not be the default new deployment. K3s Traefik/ServiceLB may consume node ports 80/443.
+
+See [Kubernetes Networking](KUBERNETES-NETWORKING.md).
+
+
 ## Integration delivery gates
 
 1. Confirm official documentation and version(s), license/commercial terms, and maintenance.

@@ -27,6 +27,11 @@ Planned specifications not yet published: AI orchestration, durable execution/mi
 - [Data Services & Messaging](DATA-SERVICES.md) — stateful installation, backups, restores and RabbitMQ/AMQP migration requirements.
 - [ADR 0003](adr/0003-data-services-and-brokers.md) — why database and message broker lifecycle contracts must remain distinct.
 
+## Kubernetes networking
+
+- [Kubernetes Networking](KUBERNETES-NETWORKING.md) — ClusterIP, NodePort, LoadBalancer, ExternalName, Ingress, Gateway API, K3s routing, RBAC and deployment safeguards.
+
+
 ### Language
 
 - **Pod:** one registered host/SSH endpoint; not Kubernetes.

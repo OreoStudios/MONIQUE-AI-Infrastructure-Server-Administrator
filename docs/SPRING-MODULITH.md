@@ -147,6 +147,17 @@ These arrows represent **proposed Java dependencies**; they are acyclic and must
 **Status:** proposed module interfaces, not implemented Java classes. See [DATA-SERVICES.md](DATA-SERVICES.md).
 
 
+## Kubernetes integration bounded context (target)
+
+A new **`kubernetes`** module owns cluster registration metadata, sanitized namespace/workload/Service/Ingress/Gateway inventories and versioned operation previews. Its public contracts are `ClusterDirectory`, `KubernetesServiceQuery`, `GatewayCapabilityQuery` and `KubernetesOperationPreview`. It may depend on `integrationcatalog` and `pods` public APIs for verified host correlations, but never imports `execution.internal` or raw secrets. It does **not** own the execution approval state.
+
+`workflows` coordinates scoped plans, `policy` approves and `execution` dispatches restricted Kubernetes API workers. Distinguish `KubernetesWorkloadPod` from MONIQUE's `Pod` host type in code and the UI.
+
+Kubernetes Services and Ingress/Gateway are **resources inside one integration**, not seven distinct provider connector brands. Gateway resources require supported CRDs/controller discovery; NetworkPolicy requires a CNI with enforcement.
+
+[Full design and compatibility requirements](KUBERNETES-NETWORKING.md). **No Java implementation currently exists.**
+
+
 ## Monitoring bounded contexts
 
 Add **two** modules to the target Spring Modulith application. No monitoring or security adapter may hold a reference to `execution.internal` or invoke write-capable ports.

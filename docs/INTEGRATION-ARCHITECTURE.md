@@ -140,6 +140,26 @@ RabbitMQ uses **two independent interfaces**: management HTTP API for administra
 See [DATA-SERVICES.md](DATA-SERVICES.md).
 
 
+## Kubernetes-specific capabilities (target)
+
+Kubernetes is a **cluster API integration**, not an extension of generic SSH. The adapter must discover API version, namespaces, Service and EndpointSlice health, IngressClass, GatewayClass/Gateway API CRDs, controller readiness, CNI network-policy enforcement and any LoadBalancer implementation before offering write capabilities.
+
+`KubernetesCluster`, `KubernetesService`, `KubernetesIngress`, `KubernetesGateway` and `KubernetesWorkloadPod` are distinct from MONIQUE's registered `Pod` host. Expose native operations through scoped typed resources. Cluster-admin, arbitrary `kubectl exec`, Secret disclosure, and unreviewed YAML apply are not default capabilities. Preview namespace/traffic effects and require approval for node exposure, LB provisioning and cross-namespace routing.
+
+```mermaid
+flowchart LR
+  Catalog["Provider Capability Registry"] --> Cluster["Kubernetes/K3s Adapter"]
+  Cluster --> Svc["Service + EndpointSlice"]
+  Cluster --> Ingress["Ingress + IngressClass"]
+  Cluster --> Gateway["GatewayClass + Gateway + HTTPRoute"]
+  Gateway --> L7["Maintained controller"]
+  Ingress --> L7
+  Svc --> Ready["Ready workload endpoints"]
+```
+
+Detailed semantics, K3s host-port precautions and 2026 ingress-nginx retirement: [KUBERNETES-NETWORKING.md](KUBERNETES-NETWORKING.md).
+
+
 ## Implementation verification
 
 Contract test suite for every adapter:

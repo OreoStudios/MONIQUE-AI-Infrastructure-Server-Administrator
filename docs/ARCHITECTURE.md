@@ -164,6 +164,25 @@ Self-hosted databases and brokers are **managed workloads on Pods**, never depen
 See [Data Services](DATA-SERVICES.md), [ADR 0003](adr/0003-data-services-and-brokers.md).
 
 
+## Kubernetes network control plane (target)
+
+A **KubernetesCluster** is a separately enrolled API endpoint and authorization scope, not equivalent to a MONIQUE Pod (VPS/dedicated host). Its ephemeral Kubernetes workload Pods are tracked as Kubernetes resources, never as SSH-managed hosts. Kubernetes Services, EndpointSlices, Ingress and Gateway API are managed through a version- and RBAC-scoped adapter.
+
+```mermaid
+flowchart TB
+  Web["Operator / MONIQUE AI planning"] --> Policy["Immutable plan + policy + human approval"]
+  Policy --> Worker["Restricted Kubernetes API worker"]
+  Worker --> API["Kubernetes API server"]
+  API --> Services["ClusterIP / NodePort / LoadBalancer / ExternalName"]
+  API --> Routes["Ingress / GatewayClass / Gateway / HTTPRoute"]
+  Routes --> Controller["Maintained controller + CNI/LB integration"]
+  Controller --> Services
+  Services --> Endpoints["EndpointSlices + ready workload Pods"]
+```
+
+No public exposure claim without verified controller, externally routable IP/DNS, firewall and TLS health. Gateway API is preferred for new HTTP routing; the retired community ingress-nginx controller must not be a default installer. K3s Traefik/ServiceLB frequently uses 80/443, potentially conflicting with Coolify or Pterodactyl reverse proxies. See [Kubernetes Networking](KUBERNETES-NETWORKING.md).
+
+
 ## Quality attributes and trade-offs
 
 | Attribute | Target invariant | Verification |

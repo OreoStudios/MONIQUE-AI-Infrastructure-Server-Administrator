@@ -162,6 +162,32 @@ flowchart TB
 
 Read [Data Services](docs/DATA-SERVICES.md) · [Integrations](docs/INTEGRATIONS.md) · [ADR 0003](docs/adr/0003-data-services-and-brokers.md).
 
+## Kubernetes, K3s, Services & Gateway API (planned)
+
+MONIQUE's roadmap includes Kubernetes and K3s **cluster integration**, separate from managing VPS/dedicated machines. **MONIQUE Pods are servers; Kubernetes Pods are ephemeral workloads.** Kubernetes resources must be modeled through a separately authorized `KubernetesCluster` connection.
+
+| Kubernetes capability | Planned behavior |
+|---|---|
+| **ClusterIP** | Cluster-internal Service, stable discovery for ready application endpoints |
+| **NodePort** | Expose a node port after validating firewall and configurable port range |
+| **LoadBalancer** | Integrate supported cloud or bare-metal LB controller; verify external IP assignment and reachability |
+| **ExternalName** | Create/inspect DNS CNAME mapping without falsely claiming network proxying |
+| **Ingress** | Maintain supported existing HTTP(S) routing with a maintained controller |
+| **Gateway API** | Preferred path for new GatewayClass/Gateway/HTTPRoute/GRPCRoute routing, subject to controller support |
+
+```mermaid
+flowchart LR
+  Client["External request"] --> Gateway["Load balancer / Gateway or Ingress controller"]
+  Gateway --> Route["HTTPRoute or Ingress rule"]
+  Route --> Service["ClusterIP Kubernetes Service"]
+  Service --> Pods["Ready Kubernetes workload Pods"]
+```
+
+**Important 2026 warning:** community **ingress-nginx was retired March 24, 2026**. Do not use it as the default for new MONIQUE installations; detect existing deployments and plan migration to a maintained controller or Gateway API. On K3s, Traefik/ServiceLB often uses host ports **80/443**, so MONIQUE must prevent collisions with existing Coolify/Pterodactyl proxies.
+
+See the detailed [Kubernetes Networking engineering specification](docs/KUBERNETES-NETWORKING.md). **All features here are planned, not implemented.**
+
+
 ## Pod data model
 
 ```mermaid
