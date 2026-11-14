@@ -1,0 +1,27 @@
+name: MONIQUE validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - name: Backend unit tests
+        run: mvn -B -f backend/pom.xml test
+      - name: CLI and packaging tests
+        run: |
+          python3 -m unittest discover -s cli/tests -v
+          python3 -m unittest discover -s scripts/tests -v
