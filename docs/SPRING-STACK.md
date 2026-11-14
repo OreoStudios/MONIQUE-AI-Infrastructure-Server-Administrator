@@ -127,6 +127,25 @@ Prometheus, Grafana and Wazuh are **separate services**, not Spring starters. Mo
 See [Observability](OBSERVABILITY.md), [Security Monitoring](SECURITY-MONITORING.md) and [ADR](adr/0001-observability-security-stack.md).
 
 
+## External database management versus Spring application dependencies
+
+MONIQUE managing RabbitMQ, Redis or MongoDB **does not** mean MONIQUE itself must use those technologies. Avoid unnecessary Spring starters and infrastructure dependencies:
+
+| Technology | Role in MONIQUE backend |
+|---|---|
+| Spring JDBC + PostgreSQL | **Existing** metadata database for Monique itself |
+| Spring Data JDBC / JPA | Optional aggregate persistence refactor |
+| Spring Data Redis | **Not needed** unless Monique itself uses Redis for caching/locks |
+| Spring Data MongoDB | **Not needed** unless Monique itself stores application data in MongoDB |
+| Spring AMQP / RabbitMQ | **Not needed** to manage a remote RabbitMQ broker via its HTTP API; only add if Monique itself uses AMQP |
+| Spring for Apache Kafka | **Not needed** to administer a remote Kafka cluster; only add for Monique's own event pipeline |
+| Spring Actuator + Micrometer | Proposed health metrics for the control plane and normalized monitoring |
+
+Prefer typed REST/CLI adapters in isolated workers for lifecycle operations, with compatibility-tested vendor SDKs only where appropriate. Database data, backup objects, RabbitMQ secrets and message contents never pass through model context or ordinary application logs.
+
+See [Data Services](DATA-SERVICES.md).
+
+
 ## Integration delivery technology choices
 
 The 92-entry roadmap is intentionally **not 92 Spring starters**. Keep provider SDKs inside isolated adapter modules/workers and add dependencies only when a provider implementation is actually tested:

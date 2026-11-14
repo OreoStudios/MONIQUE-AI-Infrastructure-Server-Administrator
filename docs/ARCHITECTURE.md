@@ -140,6 +140,30 @@ The SPI is a **capability and metadata boundary**, not an alternative authorizat
 
 See [Integration Catalog](INTEGRATIONS.md), [Integration Architecture](INTEGRATION-ARCHITECTURE.md) and [ADR 0002](adr/0002-provider-integration-model.md).
 
+## Data service and messaging topology (target)
+
+```mermaid
+flowchart TB
+  Operator["Operator"] --> Planner["Spring AI: structured proposal only"]
+  Planner --> Policy["Risk, protected resources and approval"]
+  Policy --> Jobs["Durable job / worker"]
+  Jobs --> SQL["PostgreSQL / MySQL / MariaDB / MongoDB"]
+  Jobs --> KV["Redis / Valkey / cache"]
+  Jobs --> MQ["RabbitMQ / Kafka / NATS"]
+  SQL --> Backups["Engine-specific backups and restore tests"]
+  KV --> Backups
+  MQ --> Continuity["Topology + message continuity checks"]
+  Backups --> Verify["Monitoring and verified postconditions"]
+  Continuity --> Verify
+```
+
+Self-hosted databases and brokers are **managed workloads on Pods**, never dependencies bundled into the MONIQUE HTTP API deployment. Managed services (e.g. Neon, MongoDB Atlas, CloudAMQP) use external ConnectedAccount resources and scoped provider APIs.
+
+`DataServiceInstance` tracks engine, major version, deployment mode, parent Pod or provider resource, ports, storage ownership, credential reference, health/backup policies and observed state. The system cannot assume that a RabbitMQ definitions export includes queued messages, or that a Redis cache is durable; recovery semantics are version- and engine-specific. No installation or migration has been implemented as of this document.
+
+See [Data Services](DATA-SERVICES.md), [ADR 0003](adr/0003-data-services-and-brokers.md).
+
+
 ## Quality attributes and trade-offs
 
 | Attribute | Target invariant | Verification |

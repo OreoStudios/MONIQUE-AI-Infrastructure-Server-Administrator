@@ -52,6 +52,19 @@
 References: [Wazuh components](https://documentation.wazuh.com/current/getting-started/components/index.html) · [Wazuh sizing](https://documentation.wazuh.com/current/quickstart.html) · [Spring Boot actuator security](https://docs.spring.io/spring-boot/reference/actuator/endpoints.html).
 
 
+## Database, cache and broker hardening (target)
+
+- No default public network listeners. PostgreSQL 5432, MySQL/MariaDB 3306, MongoDB 27017, Redis 6379, RabbitMQ AMQP 5672 and management API 15672 are standard **port examples**, not permission to open firewalls.
+- Use least-privilege database roles/Redis ACLs/RabbitMQ vhost permissions, TLS as appropriate, vault-backed credentials and redaction.
+- Backups contain potentially sensitive application data; RabbitMQ definitions may contain password hashes. Encrypt, restrict retention/access, and test restores in an isolated environment.
+- Distinguish durable Redis/AOF/RDB profiles, database logical vs physical backups, and **RabbitMQ definitions vs queued messages**. Never claim recovery capability from a definitions-only export.
+- Review resource saturation, ports, Docker networks and volumes before installing beside Pterodactyl, Coolify or Minecraft services.
+- Destructive restoration, database major-version upgrades, broker topology replacement and cross-Pod migrations require explicit impact review and operator approval.
+- No AI access to unrestricted SQL mutation or broker publish/consume tools. Run authenticated protocol probes with disposable test resources and operator-controlled scope.
+
+See [DATA-SERVICES.md](DATA-SERVICES.md), [ADR 0003](adr/0003-data-services-and-brokers.md).
+
+
 ## Third-party connector threat model (planned)
 
 - Treat provider URLs, webhooks, DNS targets, returned manifests and API responses as untrusted. Use explicit HTTPS endpoint allowlists, region scope, TLS pinning/verification, payload bounds, and network egress restrictions to prevent SSRF.

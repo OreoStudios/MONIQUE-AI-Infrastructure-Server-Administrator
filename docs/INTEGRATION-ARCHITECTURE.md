@@ -121,6 +121,25 @@ sequenceDiagram
 - Avoid exposing raw Docker daemon socket or Kubernetes cluster-admin credentials to the Spring HTTP/API process.
 - No one-click cross-provider "full migration" promise: use workload manifests + database snapshot + object/volume transfer + secrets mapping + cutover + rollback; preserve provider-specific semantics.
 
+## Database and broker adapters
+
+The integration registry exposes **per-engine** capabilities such as `discover`, `install`, `configure`, `create_database`, `create_user`, `backup`, `restore`, `migrate`, `monitor`, `queue.manage`, and `topic.manage`. These are not universal; missing support must return `UNSUPPORTED`.
+
+```mermaid
+flowchart LR
+  Catalog["integrationcatalog SPI"] --> DB["dataservices adapters"]
+  Catalog --> Broker["messaging adapters"]
+  DB --> SQL["SQL / NoSQL / cache engines"]
+  Broker --> MQ["RabbitMQ / Kafka / NATS"]
+  SQL --> Restore["Engine-specific restore"]
+  MQ --> Replay["Topology and message state verification"]
+```
+
+RabbitMQ uses **two independent interfaces**: management HTTP API for administration, and AMQP for publish/consume. A successful management API operation does not demonstrate data-plane availability or queue payload continuity. Provider credentials remain in the vault; worker execution requires an approved operation ID, scope and immutable plan digest.
+
+See [DATA-SERVICES.md](DATA-SERVICES.md).
+
+
 ## Implementation verification
 
 Contract test suite for every adapter:

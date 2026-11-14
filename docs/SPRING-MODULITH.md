@@ -124,6 +124,29 @@ Add `spring-modulith-starter-test` to the test scope. Configure `@ApplicationMod
 
 See [Architecture](ARCHITECTURE.md), [Execution](EXECUTION-AND-MIGRATIONS.md), [Spring stack](SPRING-STACK.md).
 
+## Data service and broker bounded contexts (target)
+
+| Module | Domain ownership | Public contract | Allowed dependencies |
+|---|---|---|---|
+| `dataservices` | SQL/NoSQL/cache inventory, versions, backup and recovery evidence | `DataServiceDirectory`, `BackupEvidence` | `pods`, `integrationcatalog` |
+| `messaging` | RabbitMQ/Kafka/NATS brokers, queue/topic topology, consumer/health evidence | `BrokerDirectory`, `BrokerTopology` | `pods`, `integrationcatalog` |
+
+```mermaid
+flowchart LR
+  DS["dataservices"] --> SPI["integrationcatalog SPI"]
+  MQ["messaging"] --> SPI
+  DS --> Pods["pods public API"]
+  MQ --> Pods
+  Plan["workflows"] --> DS
+  Plan --> MQ
+  Exec["execution"] --> SPI
+```
+
+These arrows represent **proposed Java dependencies**; they are acyclic and must be verified using `ApplicationModules.of(MoniqueApplication.class).verify()`. Only `workflows` may coordinate actionable lifecycle plans; `execution` invokes approved operations through the SPI. AI, Web controllers and these management modules cannot directly perform SSH writes. Adapter implementation packages must never be imported from the control plane.
+
+**Status:** proposed module interfaces, not implemented Java classes. See [DATA-SERVICES.md](DATA-SERVICES.md).
+
+
 ## Monitoring bounded contexts
 
 Add **two** modules to the target Spring Modulith application. No monitoring or security adapter may hold a reference to `execution.internal` or invoke write-capable ports.
