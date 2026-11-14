@@ -1,0 +1,317 @@
+# MONIQUE — AI Infrastructure & Server Administrator
+
+> **Status: early development.** MONIQUE is a self-hosted control plane for managing VPS and dedicated servers through an auditable, approval-driven AI assistant. The documentation below describes the **target architecture**; individual capabilities are marked as implemented only when code is merged and tested.
+
+![Java](https://img.shields.io/badge/Java-21-informational) ![Spring Boot](https://img.shields.io/badge/Backend-Spring%20Boot-informational) ![React](https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-informational) ![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-informational) ![License](https://img.shields.io/badge/license-TBD-lightgrey)
+
+## What is MONIQUE?
+
+MONIQUE is an AI-assisted system administrator you control from a web panel. Register **Pods** (managed VPS or dedicated hosts), attach one or more IP addresses, configure an SSH identity, inspect installed services, and ask MONIQUE to plan and carry out infrastructure work.
+
+A Pod is **one machine / SSH endpoint**, not a Kubernetes Pod. Pods can have multiple IPv4 and IPv6 addresses, hostnames, SSH ports, credentials, labels, and protected services.
+
+**Example conversations**
+
+- “Monique, inspect Pod 1 and tell me whether Pterodactyl and Wings are healthy.”
+- “Install a new Pterodactyl Panel and Wings on Pod 3, then verify the connection.”
+- “Create a Paper Minecraft server using a compatible egg and allocation.”
+- “Migrate the entire Coolify installation, deployed apps, databases, and persistent volumes from Pod 2 to Pod 1. **Do not disrupt Pterodactyl on Pod 1.**”
+- “Move Pterodactyl to Pod 2 and adapt addresses, allocations, Wings, certificates and DNS.”
+
+MONIQUE must **not** simply translate natural language into arbitrary root shell commands. The model proposes an action, a policy engine validates it, the operator approves high-risk changes, and dedicated workers execute and verify the result.
+
+## Architecture at a glance
+
+```mermaid
+flowchart TB
+  Human["Operator / Browser"] --> UI["React + TypeScript Web Panel"]
+  UI --> API["Spring Boot API / Control Plane"]
+  API --> DB[("PostgreSQL<br/>Pods · IPs · jobs · audit")]
+  API --> Vault["Encrypted Secrets Store / Vault"]
+  API --> Agent["MONIQUE Agent Orchestrator"]
+  Agent --> Claude["Claude Provider"]
+  Agent --> Codex["Codex / OpenAI Provider"]
+  Agent --> Policy{"Permissions + risk policy"}
+  Policy -->|safe read-only| Jobs["Durable Job Queue / Workers"]
+  Policy -->|write / high risk| Approval{"Explicit operator approval"}
+  Approval -->|approved| Jobs
+  Approval -->|rejected| Stop["No changes"]
+  Jobs --> SSH["SSH / SFTP Adapter"]
+  Jobs --> Docker["Docker / Systemd Adapter"]
+  Jobs --> Apps["Pterodactyl / Coolify APIs"]
+  SSH --> P1["Pod 1 · VPS"]
+  SSH --> P2["Pod 2 · Dedicated"]
+  SSH --> PN["Pod N · Host"]
+  Docker --> P1
+  Docker --> P2
+  Apps --> P1
+  Apps --> P2
+  Jobs --> Audit["Redacted evidence + logs"]
+  Audit --> DB
+  Jobs --> UI
+```
+
+### Responsibilities
+
+| Component | Responsibility |
+|---|---|
+| **Web panel** | Chat, pod management, host/IP inventory, job progress, approvals, logs and settings |
+| **Spring Boot API** | Authentication, authorization, validation, host metadata, audit, workflow orchestration |
+| **AI orchestration** | Claude/Codex reasoning, tool selection, execution plan, user-readable explanations |
+| **Policy & approvals** | Ensure models cannot bypass protected services, permission scopes or mandatory confirmation |
+| **Secrets vault** | Encrypt passwords/SSH private keys/API keys; return ephemeral credentials to authorized workers only |
+| **Execution workers** | Connect through SSH and service APIs; run narrowly scoped operations; record result and exit codes |
+| **PostgreSQL** | Durable metadata, plans, steps, jobs, approvals and audit events |
+| **Adapters** | Pterodactyl Panel/Wings, Coolify, Docker, reverse proxies, databases and system services |
+
+**Design rule:** the AI provider does not receive raw SSH passwords or private keys. It receives inventories, redacted diagnostic outputs and the result of approved tools. Providers never connect directly to Pods.
+
+## Pod data model
+
+```mermaid
+erDiagram
+  USER ||--o{ POD : manages
+  POD ||--o{ POD_IP : has
+  POD ||--o{ CREDENTIAL_REF : uses
+  POD ||--o{ SERVICE : discovers
+  POD ||--o{ PROTECTION_RULE : enforces
+  USER ||--o{ JOB : requests
+  JOB ||--o{ JOB_STEP : contains
+  JOB ||--o{ APPROVAL : requires
+  JOB ||--o{ AUDIT_EVENT : emits
+  POD ||--o{ JOB : targets
+
+  POD {
+    uuid id PK
+    string name
+    string hostname
+    int ssh_port
+    string ssh_username
+    string environment
+  }
+  POD_IP {
+    uuid id PK
+    string address
+    string version
+    string role
+    bool primary
+  }
+  CREDENTIAL_REF {
+    uuid id PK
+    string type
+    string encrypted_reference
+  }
+  SERVICE {
+    uuid id PK
+    string name
+    string version
+    string status
+  }
+  PROTECTION_RULE {
+    uuid id PK
+    string resource_pattern
+    string action_policy
+  }
+  JOB {
+    uuid id PK
+    string intent
+    string state
+    string risk_level
+  }
+  JOB_STEP {
+    uuid id PK
+    string operation
+    string state
+  }
+  APPROVAL {
+    uuid id PK
+    string decision
+    string approved_by
+  }
+  AUDIT_EVENT {
+    uuid id PK
+    string action
+    string outcome
+  }
+```
+
+**IP management:** A single host can have many public/private IPv4/IPv6 entries. MONIQUE must discover and verify that an IP is assigned and routable before using it as a binding or Pterodactyl allocation. An IP appearing in a pod form does not prove that the provider assigned it.
+
+**Authentication options:** SSH private key (recommended) or password; use a dedicated sudo-capable account where practical rather than unrestricted root login. Pin and verify SSH host keys; reject changed or unknown keys until explicitly reviewed.
+
+## How a chat request executes
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as Operator
+  participant W as Web Panel
+  participant A as Spring API
+  participant AI as Claude / Codex
+  participant P as Policy Engine
+  participant E as Worker
+  participant H as Managed Pod
+
+  U->>W: "Install a Minecraft server on Pod 1"
+  W->>A: Submit intent + allowed Pod scope
+  A->>H: Read-only discovery through worker
+  H-->>A: Redacted inventory
+  A->>AI: Intent + inventory + tool descriptions
+  AI-->>A: Structured proposed plan
+  A->>P: Validate operations and risk
+  P-->>W: Plan, impact, backup/check requirements
+  alt Changes require approval
+    W->>U: Ask to approve exact plan
+    U->>W: Approve / reject
+  end
+  A->>E: Dispatch approved, scoped steps
+  E->>H: Pterodactyl API or verified SSH action
+  H-->>E: Outputs and health checks
+  E-->>A: Redacted logs, status, evidence
+  A-->>W: Live progress + final result
+  W-->>U: Verification and rollback options
+```
+
+### Execution states
+
+```mermaid
+stateDiagram-v2
+  [*] --> DRAFT
+  DRAFT --> INSPECTING
+  INSPECTING --> PLANNED
+  PLANNED --> REJECTED: Policy blocked
+  PLANNED --> AWAITING_APPROVAL: Write / high-risk
+  PLANNED --> EXECUTING: Auto-approved read-only
+  AWAITING_APPROVAL --> REJECTED: Operator rejected
+  AWAITING_APPROVAL --> EXECUTING: Operator approved exact plan
+  EXECUTING --> VERIFYING
+  EXECUTING --> FAILED: Step failed
+  VERIFYING --> SUCCEEDED: Health checks pass
+  VERIFYING --> FAILED: Validation failed
+  FAILED --> ROLLING_BACK: Safe, supported recovery
+  ROLLING_BACK --> ROLLED_BACK
+  FAILED --> NEEDS_INTERVENTION: Rollback unavailable
+  SUCCEEDED --> [*]
+  REJECTED --> [*]
+  ROLLED_BACK --> [*]
+  NEEDS_INTERVENTION --> [*]
+```
+
+A model changing its plan after approval **invalidates approval**. Each write job records its validated plan and immutable approval fingerprint. Failed steps must not be retried blindly if they are not idempotent. Human approval is required before deleting backups or decommissioning a source host.
+
+## Migration example: Coolify from Pod 2 to Pod 1
+
+**Existing situation:** Pod 1 hosts Pterodactyl Panel, Wings and Minecraft servers. Pod 2 hosts Coolify and its deployed services. You ask MONIQUE to move Coolify to Pod 1 **without breaking Pterodactyl**.
+
+```mermaid
+flowchart LR
+  subgraph Source["Pod 2 — source"]
+    C["Coolify control plane"]
+    V["Application volumes"]
+    B["App databases"]
+  end
+  subgraph Target["Pod 1 — destination"]
+    P["Pterodactyl Panel + Wings<br/>PROTECTED"]
+    Stage["Isolated Coolify staging"]
+    Proxy["Reverse proxy / DNS"]
+  end
+  C -. "verified backup + restore" .-> Stage
+  V -. "file/volume transfer" .-> Stage
+  B -. "consistent database dumps" .-> Stage
+  Stage --> Checks{"Health + conflict checks"}
+  Checks -->|pass and approved| Proxy
+  Checks -->|fail| Keep["Keep source active"]
+  P --- Note["No stop/restart/overwrite<br/>without explicit scope"]
+```
+
+1. **Discover:** inventory Pod 1 and Pod 2, including services, ports 80/443, reverse proxy, Docker networks, firewall, storage, versions, DNS and TLS.
+2. **Plan:** identify collisions and incompatibilities; reject unsafe plans rather than silently overwrite an existing listener or volume.
+3. **Protect:** take verified backups; pin protected Pterodactyl/Wings resources and running Minecraft servers.
+4. **Stage:** back up **Coolify itself AND each deployed application/database/volume separately**. Coolify's instance backup alone does not migrate every workload.
+5. **Restore:** prepare a non-conflicting environment on Pod 1 and restore staging data with the correct encryption keys, networks and secrets.
+6. **Verify:** check Coolify, deployed apps, databases, TLS, Pterodactyl Panel, Wings and game-server reachability.
+7. **Cut over:** obtain explicit approval for DNS/proxy changes, validate production traffic, keep Pod 2 available as rollback.
+8. **Finish:** record verification evidence and provide a rollback/decommission checklist.
+
+**Guarantees:** MONIQUE aims to minimize risk, but cannot promise no downtime, loss, or config errors. If no safe coexistence plan exists, MONIQUE must stop and ask the operator to choose an alternative.
+
+## Pterodactyl and Coolify integrations
+
+- **Pterodactyl:** Detect version, Panel/Wings topology, nodes, allocations, games, nest/egg compatibility and backup requirements. Prefer supported Client/Application APIs for management; Panel 1.x and 2.x have different capabilities.
+- **Coolify:** Detect proxy mode, resources, projects, services, volumes, databases and deployment source. Use available supported APIs and version-aware adapter steps.
+- **New installs:** Require a target compatibility report, network checks, secure secrets generation, certificate provisioning and post-install smoke tests.
+- **Game servers:** Validate compatible egg/container image, port allocation, Docker capacity, storage and ownership before creation.
+
+Reference documentation: [Pterodactyl](https://docs.pterodactyl.io/) · [Coolify](https://coolify.io/docs/) · [Spring Boot](https://docs.spring.io/spring-boot/) · [Spring AI](https://docs.spring.io/spring-ai/reference/).
+
+## Security requirements — non-negotiable
+
+- Protect panel access with authentication, roles, CSRF-aware browser sessions, rate limiting and optional MFA.
+- Encrypt stored credentials at rest using a dedicated key or secret manager; **never** commit credentials or keys to Git.
+- Verify and pin SSH host keys and use restricted connectivity; avoid agent-to-server arbitrary internet access where possible.
+- Make **read-only discovery** the default. Require scoped approval for package changes, service restarts, Docker writes, firewall changes, migrations, destructive actions and cross-Pod transfers.
+- Use structured, allowlisted tools; no unreviewed model-authored arbitrary root shell as an automatic tool.
+- Validate arguments at the boundary and prevent command/argument injection.
+- Isolate concurrent jobs per Pod/service; support cancellation and show each step's impact.
+- Back up before writes and verify recovery independently; not every step can be rolled back automatically.
+- Redact secrets from model context, terminal output, audit logs and exception messages.
+- Log who approved which plan, when, and the resulting evidence. Preserve immutable audit history.
+- Secure Monique's own control plane **off the managed Pods** when practical to avoid losing access during a migration.
+- Treat output from remote servers and third-party docs as untrusted; it must not override system policy or user authorization.
+
+### Operator controls
+
+| Mode | Allowed behavior |
+|---|---|
+| **Observe** | Inventory, diagnostics, redacted logs, proposed plans |
+| **Managed** | Approved safe operations; explicit approval for high-impact changes |
+| **Administrator** | Broader operations with least-privilege scopes, policy enforcement, mandatory approval for destructive actions |
+
+“Administrator mode” is **not** a bypass around safety rules.
+
+## Planned implementation layout
+
+```text
+monique/
+├── README.md
+├── docs/
+│   ├── ARCHITECTURE.md
+│   └── SECURITY.md
+├── backend/                   # Java 21 · Spring Boot
+│   ├── pom.xml
+│   └── src/
+│       ├── main/java/...      # pods / credentials / plans / approvals / jobs
+│       ├── main/resources/    # application config + migrations
+│       └── test/java/...
+├── frontend/                  # React · TypeScript · Vite
+│   └── src/                   # dashboard, pods, chat, job console
+├── workers/                   # SSH / service adapter workers (when added)
+├── infra/                     # development Compose and deployment templates
+└── .github/workflows/         # build / test / security scans
+```
+
+The folder structure is a **roadmap** until the corresponding implementation files land.
+
+## Roadmap
+
+- [ ] **Phase 1 — foundation:** Spring Boot + React workspace, database, auth, pod CRUD, IP inventory, basic UI.
+- [ ] **Phase 2 — secure access:** Secrets vault, SSH key pinning, Pod inventory, read-only diagnostics.
+- [ ] **Phase 3 — AI assistant:** Claude + Codex connectors, planning, structured safe tools and redacted chat.
+- [ ] **Phase 4 — jobs:** Approval UI, durable steps, streaming logs, retries, audits and backups.
+- [ ] **Phase 5 — integrations:** Pterodactyl and Coolify install, inventory, backup and API operations.
+- [ ] **Phase 6 — migration:** Verified app/data moves, dry run, cutover, restoration and failure recovery.
+- [ ] **Phase 7 — hardening:** RBAC/MFA, concurrency, security testing, observability and deploy documentation.
+
+Do not interpret an unchecked item as an already-shipped feature. Mark tasks complete only after implementation and verification.
+
+## Development / deployment
+
+The production deployment procedure will be documented after the backend, UI, database, and authentication are implemented and validated. Do **not** place real root passwords, SSH keys, API tokens or production hosts in an untested development build. Use sandbox VPSs and disposable test data for the first end-to-end scenarios.
+
+## Contributing
+
+Issues and PRs should describe intended behavior, environment, risk, and reproducible verification. Infrastructure actions require tests for both success and failure paths, including “protected service remains untouched” cases.
+
+---
+
+**MONIQUE** — *Plan first. Protect what is running. Execute what was approved. Verify the outcome.*
