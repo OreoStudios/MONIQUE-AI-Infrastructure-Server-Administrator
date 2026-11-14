@@ -1,0 +1,48 @@
+services:
+  database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: monique
+      POSTGRES_USER: monique
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - monique_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monique -d monique"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - private
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/monique
+      SPRING_DATASOURCE_USERNAME: monique
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      MONIQUE_ADMIN_TOKEN: ${MONIQUE_ADMIN_TOKEN:?Set MONIQUE_ADMIN_TOKEN}
+      MONIQUE_ENCRYPTION_KEY_BASE64: ${MONIQUE_ENCRYPTION_KEY_BASE64:?Set MONIQUE_ENCRYPTION_KEY_BASE64}
+      MONIQUE_WEB_ORIGIN: ${MONIQUE_WEB_ORIGIN:-http://localhost:5173}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      MONIQUE_CLAUDE_MODEL: ${MONIQUE_CLAUDE_MODEL:-claude-sonnet-4-5}
+      MONIQUE_CODEX_MODEL: ${MONIQUE_CODEX_MODEL:-gpt-5.1-codex}
+    networks:
+      - private
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:8088:80"
+    networks:
+      - private
+networks:
+  private:
+volumes:
+  monique_db:
