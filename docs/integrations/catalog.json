@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "reviewedAt": "2026-11-14",
   "status": "ROADMAP_NOT_IMPLEMENTED",
   "priorityMeaning": {
@@ -589,25 +589,25 @@
       "category": "Databases / storage / backup",
       "priority": "P0",
       "interface": "standard_api",
-      "documentation": null,
+      "documentation": "https://www.postgresql.org/docs/current/",
       "status": "ROADMAP_NOT_IMPLEMENTED"
     },
     {
       "id": "mysql",
-      "name": "MySQL / MariaDB",
+      "name": "MySQL",
       "category": "Databases / storage / backup",
       "priority": "P0",
       "interface": "standard_api",
-      "documentation": null,
+      "documentation": "https://dev.mysql.com/doc/",
       "status": "ROADMAP_NOT_IMPLEMENTED"
     },
     {
       "id": "redis",
-      "name": "Redis / Valkey",
+      "name": "Redis",
       "category": "Databases / storage / backup",
       "priority": "P1",
       "interface": "standard_api",
-      "documentation": null,
+      "documentation": "https://redis.io/docs/latest/",
       "status": "ROADMAP_NOT_IMPLEMENTED"
     },
     {
@@ -616,7 +616,7 @@
       "category": "Databases / storage / backup",
       "priority": "P2",
       "interface": "standard_api",
-      "documentation": null,
+      "documentation": "https://www.mongodb.com/docs/manual/",
       "status": "ROADMAP_NOT_IMPLEMENTED"
     },
     {
@@ -843,6 +843,354 @@
       "interface": "evaluate",
       "documentation": null,
       "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "mariadb",
+      "name": "MariaDB",
+      "category": "Databases / storage / backup",
+      "priority": "P0",
+      "interface": "standard_api",
+      "documentation": "https://mariadb.com/docs/server/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "valkey",
+      "name": "Valkey",
+      "category": "Databases / storage / backup",
+      "priority": "P1",
+      "interface": "standard_api",
+      "documentation": "https://valkey.io/topics/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "sqlite",
+      "name": "SQLite (embedded)",
+      "category": "Databases / storage / backup",
+      "priority": "P1",
+      "interface": "cli_protocol",
+      "documentation": "https://www.sqlite.org/docs.html",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "clickhouse",
+      "name": "ClickHouse",
+      "category": "Databases / storage / backup",
+      "priority": "P2",
+      "interface": "official_api",
+      "documentation": "https://clickhouse.com/docs",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "timescaledb",
+      "name": "TimescaleDB (PostgreSQL extension)",
+      "category": "Databases / storage / backup",
+      "priority": "P2",
+      "interface": "standard_api",
+      "documentation": "https://docs.timescale.com/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "influxdb",
+      "name": "InfluxDB",
+      "category": "Databases / storage / backup",
+      "priority": "P2",
+      "interface": "official_api",
+      "documentation": "https://docs.influxdata.com/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "opensearch",
+      "name": "OpenSearch",
+      "category": "Databases / storage / backup",
+      "priority": "P2",
+      "interface": "official_api",
+      "documentation": "https://docs.opensearch.org/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "elasticsearch",
+      "name": "Elasticsearch",
+      "category": "Databases / storage / backup",
+      "priority": "P2",
+      "interface": "official_api",
+      "documentation": "https://www.elastic.co/docs",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "meilisearch",
+      "name": "Meilisearch",
+      "category": "Databases / storage / backup",
+      "priority": "P2",
+      "interface": "official_api",
+      "documentation": "https://www.meilisearch.com/docs",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "qdrant",
+      "name": "Qdrant",
+      "category": "Databases / storage / backup",
+      "priority": "P2",
+      "interface": "official_api",
+      "documentation": "https://qdrant.tech/documentation/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "dragonfly",
+      "name": "Dragonfly",
+      "category": "Databases / storage / backup",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": "https://www.dragonflydb.io/docs",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "memcached",
+      "name": "Memcached",
+      "category": "Databases / storage / backup",
+      "priority": "P2",
+      "interface": "standard_api",
+      "documentation": "https://docs.memcached.org/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "typesense",
+      "name": "Typesense",
+      "category": "Databases / storage / backup",
+      "priority": "P3",
+      "interface": "official_api",
+      "documentation": "https://typesense.org/docs/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "weaviate",
+      "name": "Weaviate",
+      "category": "Databases / storage / backup",
+      "priority": "P3",
+      "interface": "official_api",
+      "documentation": "https://docs.weaviate.io/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "milvus",
+      "name": "Milvus",
+      "category": "Databases / storage / backup",
+      "priority": "P3",
+      "interface": "official_api",
+      "documentation": "https://milvus.io/docs",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "neo4j",
+      "name": "Neo4j",
+      "category": "Databases / storage / backup",
+      "priority": "P3",
+      "interface": "standard_api",
+      "documentation": "https://neo4j.com/docs/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "cassandra",
+      "name": "Apache Cassandra",
+      "category": "Databases / storage / backup",
+      "priority": "P3",
+      "interface": "standard_api",
+      "documentation": "https://cassandra.apache.org/doc/latest/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "scylladb",
+      "name": "ScyllaDB",
+      "category": "Databases / storage / backup",
+      "priority": "P3",
+      "interface": "standard_api",
+      "documentation": "https://docs.scylladb.com/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "cockroachdb",
+      "name": "CockroachDB",
+      "category": "Databases / storage / backup",
+      "priority": "P3",
+      "interface": "standard_api",
+      "documentation": "https://www.cockroachlabs.com/docs/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "couchdb",
+      "name": "Apache CouchDB",
+      "category": "Databases / storage / backup",
+      "priority": "P3",
+      "interface": "official_api",
+      "documentation": "https://docs.couchdb.org/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "keydb",
+      "name": "KeyDB",
+      "category": "Databases / storage / backup",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": "https://docs.keydb.dev/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "supabase",
+      "name": "Supabase",
+      "category": "Managed database services",
+      "priority": "P1",
+      "interface": "evaluate",
+      "documentation": "https://supabase.com/docs",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "neon",
+      "name": "Neon",
+      "category": "Managed database services",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": "https://neon.tech/docs",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "mongodb-atlas",
+      "name": "MongoDB Atlas",
+      "category": "Managed database services",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": "https://www.mongodb.com/docs/atlas/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "planetscale",
+      "name": "PlanetScale",
+      "category": "Managed database services",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": "https://planetscale.com/docs",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "upstash",
+      "name": "Upstash",
+      "category": "Managed database services",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": "https://upstash.com/docs",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "aiven",
+      "name": "Aiven managed databases/brokers",
+      "category": "Managed database services",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": "https://aiven.io/docs",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "rediscloud",
+      "name": "Redis Cloud",
+      "category": "Managed database services",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": "https://redis.io/docs/latest/operate/rc/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "cloudamqp",
+      "name": "CloudAMQP (managed RabbitMQ)",
+      "category": "Managed database services",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": "https://www.cloudamqp.com/docs/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "rabbitmq",
+      "name": "RabbitMQ (AMQP)",
+      "category": "Messaging / event streaming",
+      "priority": "P0",
+      "interface": "official_api",
+      "documentation": "https://www.rabbitmq.com/docs/management",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "apachekafka",
+      "name": "Apache Kafka",
+      "category": "Messaging / event streaming",
+      "priority": "P2",
+      "interface": "standard_api",
+      "documentation": "https://kafka.apache.org/documentation/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "nats",
+      "name": "NATS / JetStream",
+      "category": "Messaging / event streaming",
+      "priority": "P2",
+      "interface": "standard_api",
+      "documentation": "https://docs.nats.io/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "redpanda",
+      "name": "Redpanda",
+      "category": "Messaging / event streaming",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": "https://docs.redpanda.com/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "activemq-artemis",
+      "name": "Apache ActiveMQ Artemis",
+      "category": "Messaging / event streaming",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": "https://artemis.apache.org/documentation/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "pulsar",
+      "name": "Apache Pulsar",
+      "category": "Messaging / event streaming",
+      "priority": "P3",
+      "interface": "evaluate",
+      "documentation": "https://pulsar.apache.org/docs/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "emqx",
+      "name": "EMQX (MQTT broker)",
+      "category": "Messaging / event streaming",
+      "priority": "P2",
+      "interface": "evaluate",
+      "documentation": "https://docs.emqx.com/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "mosquitto",
+      "name": "Eclipse Mosquitto",
+      "category": "Messaging / event streaming",
+      "priority": "P2",
+      "interface": "cli_protocol",
+      "documentation": "https://mosquitto.org/documentation/",
+      "status": "ROADMAP_NOT_IMPLEMENTED"
     }
-  ]
+  ],
+  "notes": "All integrations are roadmap candidates. Install capability does not imply backup, migration or HA. Brokers have separate messaging and management planes.",
+  "counts": {
+    "total": 129,
+    "byCategory": {
+      "Game & hosting panels": 15,
+      "Self-hosted PaaS & containers": 13,
+      "Managed platforms / PaaS": 11,
+      "Cloud / VPS / dedicated": 12,
+      "DNS / network / ingress": 12,
+      "Databases / storage / backup": 34,
+      "DevOps / monitoring / security": 16,
+      "Managed database services": 8,
+      "Messaging / event streaming": 8
+    }
+  }
 }

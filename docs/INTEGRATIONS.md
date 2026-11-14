@@ -19,7 +19,7 @@ No connector is declared **supported** until tests for authorization, version ne
 
 **All 92 entries are planned candidates, not shipped integrations.** Priority indicates proposed implementation order, **not measured market share**. An `official_api` or `standard_api` tag means a documented integration surface was identified—not that Monique supports it today; `evaluate` means version-specific documentation and feasibility still need review.
 
-## Catalog (92 planned integrations)
+## Catalog (129 planned integrations)
 
 ### Game & hosting panels
 
@@ -113,10 +113,10 @@ No connector is declared **supported** until tests for authorization, version ne
 
 | Integration | Priority | Interface assessment |
 |---|---|---|
-| PostgreSQL | P0 | `standard_api` |
-| MySQL / MariaDB | P0 | `standard_api` |
-| Redis / Valkey | P1 | `standard_api` |
-| MongoDB | P2 | `standard_api` |
+| [PostgreSQL](https://www.postgresql.org/docs/current/) | P0 | `standard_api` |
+| [MySQL](https://dev.mysql.com/doc/) | P0 | `standard_api` |
+| [Redis](https://redis.io/docs/latest/) | P1 | `standard_api` |
+| [MongoDB](https://www.mongodb.com/docs/manual/) | P2 | `standard_api` |
 | [Amazon S3](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html) | P1 | `standard_api` |
 | [Cloudflare R2](https://developers.cloudflare.com/r2/api/) | P1 | `official_api` |
 | MinIO | P1 | `standard_api` |
@@ -126,6 +126,53 @@ No connector is declared **supported** until tests for authorization, version ne
 | BorgBackup | P2 | `cli_protocol` |
 | rclone | P1 | `cli_protocol` |
 | pgBackRest | P2 | `cli_protocol` |
+| [MariaDB](https://mariadb.com/docs/server/) | P0 | `standard_api` |
+| [Valkey](https://valkey.io/topics/) | P1 | `standard_api` |
+| [SQLite (embedded)](https://www.sqlite.org/docs.html) | P1 | `cli_protocol` |
+| [ClickHouse](https://clickhouse.com/docs) | P2 | `official_api` |
+| [TimescaleDB (PostgreSQL extension)](https://docs.timescale.com/) | P2 | `standard_api` |
+| [InfluxDB](https://docs.influxdata.com/) | P2 | `official_api` |
+| [OpenSearch](https://docs.opensearch.org/) | P2 | `official_api` |
+| [Elasticsearch](https://www.elastic.co/docs) | P2 | `official_api` |
+| [Meilisearch](https://www.meilisearch.com/docs) | P2 | `official_api` |
+| [Qdrant](https://qdrant.tech/documentation/) | P2 | `official_api` |
+| [Dragonfly](https://www.dragonflydb.io/docs) | P2 | `evaluate` |
+| [Memcached](https://docs.memcached.org/) | P2 | `standard_api` |
+| [Typesense](https://typesense.org/docs/) | P3 | `official_api` |
+| [Weaviate](https://docs.weaviate.io/) | P3 | `official_api` |
+| [Milvus](https://milvus.io/docs) | P3 | `official_api` |
+| [Neo4j](https://neo4j.com/docs/) | P3 | `standard_api` |
+| [Apache Cassandra](https://cassandra.apache.org/doc/latest/) | P3 | `standard_api` |
+| [ScyllaDB](https://docs.scylladb.com/) | P3 | `standard_api` |
+| [CockroachDB](https://www.cockroachlabs.com/docs/) | P3 | `standard_api` |
+| [Apache CouchDB](https://docs.couchdb.org/) | P3 | `official_api` |
+| [KeyDB](https://docs.keydb.dev/) | P3 | `evaluate` |
+
+### Messaging / event streaming
+
+| Integration | Priority | Interface assessment |
+|---|---|---|
+| [RabbitMQ (AMQP)](https://www.rabbitmq.com/docs/management) | P0 | `official_api` |
+| [Apache Kafka](https://kafka.apache.org/documentation/) | P2 | `standard_api` |
+| [NATS / JetStream](https://docs.nats.io/) | P2 | `standard_api` |
+| [Redpanda](https://docs.redpanda.com/) | P2 | `evaluate` |
+| [Apache ActiveMQ Artemis](https://artemis.apache.org/documentation/) | P3 | `evaluate` |
+| [Apache Pulsar](https://pulsar.apache.org/docs/) | P3 | `evaluate` |
+| [EMQX (MQTT broker)](https://docs.emqx.com/) | P2 | `evaluate` |
+| [Eclipse Mosquitto](https://mosquitto.org/documentation/) | P2 | `cli_protocol` |
+
+### Managed database services
+
+| Integration | Priority | Interface assessment |
+|---|---|---|
+| [Supabase](https://supabase.com/docs) | P1 | `evaluate` |
+| [Neon](https://neon.tech/docs) | P2 | `evaluate` |
+| [MongoDB Atlas](https://www.mongodb.com/docs/atlas/) | P2 | `evaluate` |
+| [PlanetScale](https://planetscale.com/docs) | P2 | `evaluate` |
+| [Upstash](https://upstash.com/docs) | P2 | `evaluate` |
+| [Aiven managed databases/brokers](https://aiven.io/docs) | P2 | `evaluate` |
+| [Redis Cloud](https://redis.io/docs/latest/operate/rc/) | P2 | `evaluate` |
+| [CloudAMQP (managed RabbitMQ)](https://www.cloudamqp.com/docs/) | P2 | `evaluate` |
 
 ### DevOps / monitoring / security
 
@@ -180,6 +227,12 @@ Official references: https://docs.pterodactyl.io/v1/api and https://docs.pteroda
 Use **Hetzner Cloud API** for Cloud VPS, networks, primary/floating IPs, firewalls and volumes. **Robot dedicated servers** have a separate API/service surface. Do not treat a Hetzner Dedicated host as a Cloud server resource; permissions and operations differ.
 
 Official reference: https://docs.hetzner.cloud/ .
+
+## Stateful data service capability semantics
+
+Every SQL, NoSQL, cache, broker, search/vector or managed database integration must independently advertise and test `inspect`, `install`, `configure`, `backup`, `restore`, `migrate`, and `monitor` as relevant. **Installation does not imply migration, backup or high-availability support.** RabbitMQ topology/definitions and queued messages require separate migration strategies; Kafka and NATS do not use RabbitMQ AMQP operations.
+
+See [DATA-SERVICES.md](DATA-SERVICES.md) and [ADR 0003](adr/0003-data-services-and-brokers.md).
 
 ## Integration delivery gates
 

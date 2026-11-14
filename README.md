@@ -100,7 +100,7 @@ The monitoring and security pipelines are separate trust domains. Prometheus and
 
 Read the engineering specifications: [Observability & Monitoring](docs/OBSERVABILITY.md) · [Wazuh & Security Monitoring](docs/SECURITY-MONITORING.md) · [Architecture](docs/ARCHITECTURE.md) · [Spring Modulith](docs/SPRING-MODULITH.md) · [Technology decision](docs/adr/0001-observability-security-stack.md).
 
-## Ecosystem integrations (roadmap — 92 candidates)
+## Ecosystem integrations (roadmap — 129 candidates)
 
 MONIQUE is designed to manage more than Pterodactyl and Coolify. The catalog includes popular **self-hosted panels**, **managed application platforms**, **VPS/cloud providers**, **DNS/networking**, **databases/backups**, and **DevOps/security** tools.
 
@@ -111,7 +111,9 @@ MONIQUE is designed to manage more than Pterodactyl and Coolify. The catalog inc
 | **Managed PaaS** | **Scalingo**, Railway, Render, Fly.io, Heroku, Vercel | Deploy apps, inspect logs, manage allowed scaling/actions |
 | **Cloud & dedicated** | Hetzner Cloud/Robot, OVHcloud, DigitalOcean, Scaleway, AWS EC2 | Discover/plan VPS provisioning, snapshots, IPs, firewalls |
 | **DNS & networking** | Cloudflare, Hetzner DNS, NGINX, Traefik, Caddy, Tailscale | Safe DNS cutovers, certificates, proxies and connectivity |
-| **Data & backups** | PostgreSQL, MySQL, Redis, MongoDB, S3, R2, restic, rclone | Backup/restore checks, replication and storage planning |
+| **Data & backups** | PostgreSQL, MySQL, MariaDB, MongoDB, Redis, Valkey, S3, R2 | Install, secure, recover and migrate stateful workloads |
+| **Messaging & streaming** | RabbitMQ/AMQP, Kafka, NATS/JetStream, Redpanda, ActiveMQ Artemis | Queues, topics, monitoring and message-safe migrations |
+| **Managed database platforms** | Supabase, Neon, MongoDB Atlas, Upstash, Aiven, CloudAMQP | Scoped provider APIs, no root SSH assumptions |
 | **DevOps & monitoring** | GitHub Actions, GitLab CI, Prometheus, Grafana, Wazuh, Uptime Kuma | Deployment diagnostics, health and security correlation |
 
 **Important distinction:** a **Pod is an SSH-managed server**; Scalingo, Railway and other hosted platforms are **connected service accounts**, not root-access Pods. Monique uses the officially supported API and the privileges granted by the user. No connector or migration action listed here is implemented merely by documenting it.
@@ -128,6 +130,37 @@ flowchart LR
 ```
 
 **Full professional specifications:** [Integration Catalog](docs/INTEGRATIONS.md) · [Integration Architecture](docs/INTEGRATION-ARCHITECTURE.md) · [Machine-readable catalog](docs/integrations/catalog.json) · [ADR 0002](docs/adr/0002-provider-integration-model.md).
+
+## Databases, caching & message brokers (roadmap)
+
+Monique should do more than `apt install`: **inspect a Pod → detect conflicts → generate a version-pinned installation plan → request approval → install/harden → verify → register backup and monitoring**.
+
+| Type | Examples | Planned capabilities |
+|---|---|---|
+| Relational SQL | PostgreSQL, MySQL, MariaDB, TimescaleDB, SQLite | Database/user creation, TLS, role grants, tested backups |
+| NoSQL & caches | MongoDB, Redis, Valkey, Memcached, Dragonfly | Secure network bindings, ACLs, memory and persistence |
+| Message brokers | **RabbitMQ (AMQP)**, Kafka, NATS, Redpanda, MQTT | Queues/topics/vhosts, consumers, metrics, continuity |
+| Search & vectors | OpenSearch, Elasticsearch, ClickHouse, Meilisearch, Qdrant | Snapshot, collection and index-aware operations |
+| Managed data services | Supabase, Neon, MongoDB Atlas, Upstash, Aiven, CloudAMQP | Provider API with account-scoped credentials |
+
+```mermaid
+flowchart TB
+  Request["Install PostgreSQL + Redis + RabbitMQ on Pod 2"] --> Preflight["Inspect OS, ports, disk, RAM and protected services"]
+  Preflight --> Plan["Engine-specific manifest and backup plan"]
+  Plan --> Approval{"Policy + operator approval"}
+  Approval -->|approved| Worker["Scoped worker"]
+  Approval -->|rejected| Stop["No changes"]
+  Worker --> DB["PostgreSQL user + database"]
+  Worker --> Cache["Redis ACL + persistence"]
+  Worker --> MQ["RabbitMQ vhost + queue + TLS"]
+  DB --> Verify["Health, backup evidence and monitoring"]
+  Cache --> Verify
+  MQ --> Verify
+```
+
+**RabbitMQ warning:** the management HTTP API (often port 15672) is not the AMQP messaging interface (often 5672/5671 with TLS). Exporting RabbitMQ definitions saves configuration, **not queued messages**; migration must verify message continuity separately. Database listeners must be private by default; credentials never go to AI providers.
+
+Read [Data Services](docs/DATA-SERVICES.md) · [Integrations](docs/INTEGRATIONS.md) · [ADR 0003](docs/adr/0003-data-services-and-brokers.md).
 
 ## Pod data model
 
@@ -365,6 +398,7 @@ The folder structure is a **roadmap** until the corresponding implementation fil
 - [ ] **Phase 6 — migration:** Verified app/data moves, dry run, cutover, restoration and failure recovery.
 - [ ] **Phase 7 — hardening:** RBAC/MFA, concurrency, security testing and deployment hardening.
 - [ ] **Phase 8 — observability & security:** Actuator/Micrometer instrumentation, Prometheus integration, optional Grafana dashboards, per-Pod exporters and optional Wazuh integration, with correlation tests.
+- [ ] **Phase 9 — data services & messaging:** version-aware PostgreSQL, MySQL/MariaDB, Redis/Valkey, MongoDB, and RabbitMQ installers, verified backups/restores, secure networking and cross-Pod migration tests.
 
 Do not interpret an unchecked item as an already-shipped feature. Mark tasks complete only after implementation and verification.
 

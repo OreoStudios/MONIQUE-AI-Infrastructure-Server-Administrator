@@ -17,10 +17,15 @@ Planned specifications not yet published: AI orchestration, durable execution/mi
 
 ## Ecosystem integration specifications
 
-- [Integration Catalog](INTEGRATIONS.md) — 92 candidates across seven groups, grouped by planned priority and interface verification.
+- [Integration Catalog](INTEGRATIONS.md) — 129 candidates across nine groups, grouped by planned priority and interface verification.
 - [Integration Architecture](INTEGRATION-ARCHITECTURE.md) — Pod vs connected-account model, adapter contracts, security and migration workflow diagrams.
 - [Machine-readable Registry](integrations/catalog.json) — versioned planning metadata; every entry is **not implemented**.
 - [ADR 0002](adr/0002-provider-integration-model.md) — why managed PaaS and host-root management require separate resource types.
+
+## Database and messaging engineering
+
+- [Data Services & Messaging](DATA-SERVICES.md) — stateful installation, backups, restores and RabbitMQ/AMQP migration requirements.
+- [ADR 0003](adr/0003-data-services-and-brokers.md) — why database and message broker lifecycle contracts must remain distinct.
 
 ### Language
 
