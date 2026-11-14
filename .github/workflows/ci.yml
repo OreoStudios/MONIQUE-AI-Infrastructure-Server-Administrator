@@ -37,6 +37,7 @@ jobs:
   compose-smoke:
     runs-on: ubuntu-latest
     needs: tests
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - name: Generate temporary test-only credentials
@@ -47,23 +48,26 @@ jobs:
       - name: Build and launch the real Docker Compose stack
         run: docker compose up -d --build
       - name: Test secured API and frontend through Nginx
+        timeout-minutes: 3
         run: |
+          docker compose ps
           ok=0
-          for i in $(seq 1 50); do
-            if curl -fsS -H "Authorization: Bearer $MONIQUE_ADMIN_TOKEN" \
+          for i in $(seq 1 20); do
+            if curl --connect-timeout 2 --max-time 5 -fsS \
+                -H "Authorization: Bearer $MONIQUE_ADMIN_TOKEN" \
                 http://127.0.0.1:8088/api/status -o /tmp/monique-status.json; then
               ok=1
               break
             fi
-            sleep 4
+            sleep 2
           done
           test "$ok" = "1"
           python3 -c 'import json; data=json.load(open("/tmp/monique-status.json")); assert data["name"]=="MONIQUE" and not data["executionEnabled"]'
-          curl -fsS http://127.0.0.1:8088/ | grep -q 'MONIQUE'
-          curl -fsS -H "Authorization: Bearer $MONIQUE_ADMIN_TOKEN" \
+          curl --max-time 5 -fsS http://127.0.0.1:8088/ | grep -q 'MONIQUE'
+          curl --max-time 5 -fsS -H "Authorization: Bearer $MONIQUE_ADMIN_TOKEN" \
               http://127.0.0.1:8088/api/pods -o /tmp/monique-pods.json
           python3 -c 'import json; assert json.load(open("/tmp/monique-pods.json"))==[]'
-          unauthorized=$(curl -s -o /dev/null -w "%{http_code}" \
+          unauthorized=$(curl --max-time 5 -s -o /dev/null -w "%{http_code}" \
               http://127.0.0.1:8088/api/pods)
           test "$unauthorized" != "200"
       - name: Logs on failure
