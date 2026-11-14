@@ -109,6 +109,15 @@ services/
 
 This layout is a **roadmap**, not an assertion that files/directories already exist. The present repository's `backend` uses PostgreSQL; don't imply a desktop installer is currently available.
 
+## Protected local Core sidecar (target)
+
+Tauri will package a **pre-obfuscated, Java 21-tested, signed** MONIQUE Spring Boot Core where OreoObfuscator is enabled for production releases. Rust verifies sidecar provenance/checksum and supervises launch; the customer does not install/run OreoObfuscator. Keep the Spring API and local worker authorization consistent across CLI, Desktop and Web.
+
+OreoObfuscator cannot transform the Tauri Rust binary or React frontend. Protect those separately using strict Tauri IPC permissions, signed updates, browser CSP and no embedded secret keys.
+
+See [Release Protection](RELEASE-PROTECTION.md).
+
+
 ## Release and test gates
 
 | Milestone | Deliverable | Verification |

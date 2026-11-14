@@ -95,6 +95,15 @@ The one-click product setup is an **orchestrator of approved local dependencies*
 
 See [Installation & Onboarding](INSTALLATION-AND-ONBOARDING.md).
 
+## OreoObfuscator and protected release security (target)
+
+Use OreoObfuscator for **MONIQUE-owned Java bytecode only** until Spring Boot/Modulith compatibility is verified. Preserve security proxy metadata, component scanning, Jackson/API contracts and worker authorization after transformation. Re-run deny-by-default policy/approval tests on the **production obfuscated artifact**.
+
+Obfuscation raises the cost of a local subscription-check bypass but is **not a secure licensing boundary**. Never embed central entitlement-signing private keys, Stripe secrets, provider billing credentials or remote access secrets in Java/Rust/React. Oreo-hosted premium services must enforce membership independently. Store `mapping.json` privately; do not ship it with the installer.
+
+See [Release Protection](RELEASE-PROTECTION.md).
+
+
 ## Third-party connector threat model (planned)
 
 - Treat provider URLs, webhooks, DNS targets, returned manifests and API responses as untrusted. Use explicit HTTPS endpoint allowlists, region scope, TLS pinning/verification, payload bounds, and network egress restrictions to prevent SSRF.

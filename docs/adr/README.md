@@ -11,3 +11,4 @@ Decisions are captured as append-only records. Each new decision must state its 
 | [0004](0004-self-hosted-cli-membership.md) | Accepted design direction; not implemented | Self-hosted CLI and monthly membership licensing |
 | [0005](0005-tauri-desktop-client.md) | Accepted design direction; not implemented | Tauri Rust desktop with shared API and safe local backend sidecar |
 | [0006](0006-one-install-managed-components.md) | Accepted as target product experience; not implemented | One customer installer provisions internal Core, PostgreSQL, workers and UI safely |
+| [0007](0007-oreo-obfuscator-release-protection.md) | Accepted design target; not implemented | Release-only Java bytecode obfuscation, Spring keep rules and transformed-artifact verification |

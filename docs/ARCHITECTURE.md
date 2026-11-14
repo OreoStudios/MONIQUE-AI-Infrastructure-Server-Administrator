@@ -245,6 +245,15 @@ A local desktop install must manage user-scoped storage and authenticated local 
 
 **No automatic deployment to registered Pods:** the installer provisions MONIQUE's own internals only; later server/Pod changes still require authorization, plans and approvals. Standalone local packaging depends on a thoroughly tested PostgreSQL strategy; see [Installation](INSTALLATION-AND-ONBOARDING.md).
 
+## Bytecode hardening and signed release artifacts (target)
+
+OreoObfuscator will be a **build-time Java release tool**, never a customer-installed runtime module. It produces candidate transformed MONIQUE Core/Java worker bytecode, which must pass Spring/Modulith/security regression tests on Java 21 before final packaging and signing. Source, symbols, license-signing secrets and production CI credentials remain private.
+
+OreoObfuscator cannot provide trust over code that an administrator can patch on their own machine. The central hosted membership and optional paid AI service remain separate authorization points; self-hosted operator approval and worker policy remain essential.
+
+See [Release Protection](RELEASE-PROTECTION.md) and [ADR 0007](adr/0007-oreo-obfuscator-release-protection.md).
+
+
 ## Quality attributes and trade-offs
 
 | Attribute | Target invariant | Verification |

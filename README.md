@@ -483,7 +483,27 @@ The folder structure is a **roadmap** until the corresponding implementation fil
 - [ ] **Phase 9 — data services & messaging:** version-aware PostgreSQL, MySQL/MariaDB, Redis/Valkey, MongoDB, and RabbitMQ installers, verified backups/restores, secure networking and cross-Pod migration tests.
 - [ ] **Phase 10 — local-first delivery:** CLI for PowerShell/Bash/zsh; Tauri/Rust desktop application; remote/local runtime selection; signed installers; subscription licensing and billing integration, with safety and cross-platform tests.
 
+- [ ] **Phase 11 — obfuscated production releases:** version-pin OreoObfuscator, implement Spring/Modulith keep rules, test final Java 21 bytecode and signed installer outputs.
+
 Do not interpret an unchecked item as an already-shipped feature. Mark tasks complete only after implementation and verification.
+
+## Production protection — OreoObfuscator (planned)
+
+MONIQUE's Java 21 **Spring Boot + Spring Modulith** Core and Java workers/CLI are intended to use **OreoObfuscator**, an Oreo Studios Java-bytecode obfuscator, for an additional layer of production release hardening.
+
+```mermaid
+flowchart LR
+  Source["MONIQUE Java source"] --> Compile["Java 21 build / baseline tests"]
+  Compile --> Oreo["OreoObfuscator<br/>Spring-compatible keep rules"]
+  Oreo --> Test["Test transformed JAR<br/>Security + Modulith + licensing"]
+  Test --> Sign["Sign and package release"]
+  Sign --> Installer["Desktop / CLI / self-hosted installer"]
+```
+
+**Roadmap only:** proper keep rules and compatibility tests must preserve Spring reflection, component scanning, module boundaries, JSON contracts, AOP/security and Boot packaging. The JDK 25 tool must produce a verified Java 21-compatible artifact. **Obfuscation cannot make local software uncrackable** and does not apply to Tauri Rust or React; signed entitlements and server-side checks for Oreo-hosted paid features remain essential.
+
+[Full Release Protection Plan](docs/RELEASE-PROTECTION.md) · [Security](docs/SECURITY.md) · [ADR 0007](docs/adr/0007-oreo-obfuscator-release-protection.md).
+
 
 ## Development / deployment
 

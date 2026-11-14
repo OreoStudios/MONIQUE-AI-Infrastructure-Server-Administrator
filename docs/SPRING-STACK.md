@@ -159,6 +159,15 @@ See [Data Services](DATA-SERVICES.md).
 See [Desktop](DESKTOP-APP.md), [Self-hosting & CLI](SELF-HOSTING-AND-CLI.md), [Licensing](LICENSING-AND-BILLING.md).
 
 
+## OreoObfuscator production build stage (target)
+
+OreoObfuscator currently uses **JDK 25** for the obfuscator tool while MONIQUE targets **Java 21**. Transformation must retain Java 21 class compatibility and validated runtime helpers. Prefer an app-only thin JAR transformation **before** executable Spring Boot repackaging, then test the actual packaged output; do not presume nested/fat-JAR support.
+
+A Spring-compatible keep profile must preserve `@SpringBootApplication`, `@ConfigurationProperties`, Spring AI tool callbacks, Spring Security proxies, `META-INF/spring`, `META-INF/services`, application module roots, Jackson DTOs and schema migration resources. The obfuscator's own license build dependency and its `oreo-licensing` client **do not** authenticate MONIQUE memberships.
+
+**Nothing has been added to Maven or CI yet.** See [Release Protection](RELEASE-PROTECTION.md).
+
+
 ## Integration delivery technology choices
 
 The 92-entry roadmap is intentionally **not 92 Spring starters**. Keep provider SDKs inside isolated adapter modules/workers and add dependencies only when a provider implementation is actually tested:

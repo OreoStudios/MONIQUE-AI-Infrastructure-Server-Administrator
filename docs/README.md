@@ -45,6 +45,12 @@ Planned specifications not yet published: AI orchestration, durable execution/mi
 
 - [Installation & Onboarding](INSTALLATION-AND-ONBOARDING.md) — installer-owned Java/Core, PostgreSQL, restricted worker, secure setup, readiness verification, membership and Pod wizard.
 
+## Production release protection
+
+- [OreoObfuscator Release Protection](RELEASE-PROTECTION.md) — Java 21 compatibility, Spring keep rules, CI packaging, transformed-artifact tests, signed releases and licensing limitations.
+- [ADR 0007](adr/0007-oreo-obfuscator-release-protection.md) — production obfuscation decision and release gates.
+
+
 ### Language
 
 - **Pod:** one registered host/SSH endpoint; not Kubernetes.

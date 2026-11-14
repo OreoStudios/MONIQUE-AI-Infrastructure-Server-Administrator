@@ -103,3 +103,10 @@ monique connect --url https://monique.example.net
 
 **Build gate:** no Windows installer, macOS application, Linux AppImage/deb/rpm, CLI executable or licensing system is released by this documentation change. The present frontend/server build must be separately validated before packaging. See [Desktop](DESKTOP-APP.md) and [Self-hosting & CLI](SELF-HOSTING-AND-CLI.md).
 
+## Planned production obfuscation stage
+
+Unobfuscated developer builds remain available for debugging. A future, **release-only** CI job will version-pin the OreoObfuscator CLI, transform compiled MONIQUE-owned Java classes with Spring-compatible keep rules, repackage the executable JAR, rerun startup/security/Modulith tests on Java 21, then sign the final artifact. The obfuscator's JDK 25 tooling and private Maven license-contract credentials belong to CI, not the customer's installer.
+
+The actual invocation/configuration must be derived from the pinned obfuscator's supported options; **no CLI command or CI workflow has been implemented yet**. `mapping.json` and private CI credentials must never be published.
+
+See [Release Protection](RELEASE-PROTECTION.md).

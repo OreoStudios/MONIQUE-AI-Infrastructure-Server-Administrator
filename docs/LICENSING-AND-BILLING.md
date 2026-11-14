@@ -62,6 +62,15 @@ stateDiagram-v2
 
 **Policy composition:** `AllowedAction = ValidMembershipEntitlement AND OperatorPermission AND TargetCapability AND ValidApprovedPlan AND SafePreconditions`. None of these factors substitutes for the others.
 
+## Local binary obfuscation (target)
+
+MONIQUE's local signed-entitlement verifier may be protected with **OreoObfuscator in production Java releases** to discourage casual patching. This does **not** make a customer-controlled self-hosted binary uncrackable: a determined user can modify the verifier or program logic. Keep private entitlement signing keys and billing authorization exclusively on Oreo Studios servers, and re-authorize every paid hosted-AI request server-side.
+
+OreoObfuscator's internal `oreo-licensing` is a **separate** product/tooling entitlement, not MONIQUE's monthly customer membership. Test signed-license expiry, failed online refresh, bounded offline grace and recovery behavior against the obfuscated final artifact.
+
+See [Release Protection](RELEASE-PROTECTION.md).
+
+
 ## AI provider billing
 
 - **BYOK:** users configure supported provider API keys locally; their provider usage is billed to them separately from MONIQUE membership.

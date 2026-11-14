@@ -178,6 +178,13 @@ Add logical `licensing` and `usage` modules to the **customer-owned MONIQUE cont
 See [DESKTOP-APP.md](DESKTOP-APP.md), [SELF-HOSTING-AND-CLI.md](SELF-HOSTING-AND-CLI.md), [LICENSING-AND-BILLING.md](LICENSING-AND-BILLING.md).
 
 
+## OreoObfuscator post-transformation checks (target)
+
+A release transformation may rename Java packages and interfaces on which Spring Modulith depends. Preserve module root package names, named interfaces, application events and reflection metadata via verified keep rules. After obfuscation, run `ApplicationModules.verify()`, module-level tests and Spring Security/serialization checks on the transformed output. A passing bytecode verifier alone is insufficient.
+
+OreoObfuscator is **build tooling**, not a runtime Spring Modulith module. See [Release Protection](RELEASE-PROTECTION.md).
+
+
 ## Monitoring bounded contexts
 
 Add **two** modules to the target Spring Modulith application. No monitoring or security adapter may hold a reference to `execution.internal` or invoke write-capable ports.

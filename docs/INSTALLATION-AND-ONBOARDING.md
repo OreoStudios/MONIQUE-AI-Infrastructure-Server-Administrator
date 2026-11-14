@@ -108,6 +108,15 @@ On failure, record sanitized logs and a component-specific diagnostic. Do not de
 - Uninstall must clearly distinguish **remove application binaries** from **delete databases, backups, managed servers or secrets**. Default to preserving user-owned data.
 - Remote Pods remain owned and controlled by the customer. Automatic bootstrap applies **only to MONIQUE's own internal dependencies**, not to third-party hosts.
 
+## Signed, optionally obfuscated application payloads (target)
+
+The **customer installer never runs OreoObfuscator**. Release CI builds and tests MONIQUE Core, applies OreoObfuscator to compatible Java-owned classes, then signs the verified binary and bundles it with Java runtime, PostgreSQL and restricted worker components. The installer verifies signatures/checksums before execution.
+
+The final packaged application must preserve Spring Boot startup, module boundaries, DB migrations and licensing/approval behavior after transformation. `mapping.json` is retained **privately**, not inside installer archives. Java obfuscation does not protect Rust/React; those use their own signed/provenance-checked release assets.
+
+**Not implemented yet.** See [Release Protection](RELEASE-PROTECTION.md).
+
+
 ## Completion and release tests
 
 - [ ] Clean Windows install launches a real desktop, Core, PostgreSQL and worker without manual Java/SQL steps.
