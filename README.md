@@ -85,11 +85,11 @@ flowchart LR
     Exporters["Node Exporter / approved exporters"]
     Agents["Optional Wazuh agents"]
   end
-  Monique["MONIQUE · Spring Modulith"] -->|"Private /actuator/prometheus"| Prom["Prometheus"]
+  Prom["Prometheus"] -->|"Private scrape /actuator/prometheus"| Monique["MONIQUE · Spring Modulith"]
   Prom -->|"Scrapes with restricted network access"| Exporters
   Grafana["Grafana (optional)"] -->|"PromQL datasource"| Prom
   Agents -->|"Encrypted agent events"| Wazuh["Wazuh server / indexer (optional)"]
-  Monique -->|"Read-only normalized metrics"| Prom
+  Monique -->|"Bounded read-only PromQL queries"| Prom
   Monique -->|"Read-only normalized findings"| Wazuh
   Monique --> Guard["Policy, approval & job execution"]
 ```

@@ -31,8 +31,9 @@ flowchart LR
     G["Grafana (optional)"]
     O["observability module<br/>bounded read-only API"]
     A["AI investigation context<br/>sanitized facts"]
-    API -->|"/actuator/prometheus"| P
-    P -->|"PromQL query result"| O
+    P -->|"Private scrape /actuator/prometheus"| API
+    O -->|"Bounded PromQL query"| P
+    P -->|"Timestamped metric results"| O
     G -->|"Datasource"| P
     O -->|"Evidence: values, timestamps, confidence"| A
   end
