@@ -505,6 +505,19 @@ flowchart LR
 [Full Release Protection Plan](docs/RELEASE-PROTECTION.md) · [Security](docs/SECURITY.md) · [ADR 0007](docs/adr/0007-oreo-obfuscator-release-protection.md).
 
 
+## Initial implementation checkpoint (November 2026)
+
+The repository now contains **real first-stage code**, not only architecture documents:
+
+- **MONIQUE backend:** Java 21 Spring Boot, PostgreSQL-backed Pod inventory, encrypted stored credentials, admin bearer-token API, AI planning-only chat. Remote SSH execution remains **disabled**.
+- **MONIQUE CLI:** a Python standard-library development client at [cli/monique.py](cli/monique.py) supporting Pod inventory/status and planning-only AI chat; see [CLI instructions](cli/README.md).
+- **MONIQUE Web UI:** React/TypeScript/Vite dashboard at [frontend/](frontend/) for admin-token sign-in, Pod management, overview and Claude/OpenAI planning chat. The previously missing Docker Compose frontend now has a Dockerfile and private Nginx API proxy.
+- **Protected build candidate:** [scripts/protect_release.py](scripts/protect_release.py) calls the actual OreoObfuscator CLI with a conservative Spring-safe [profile](packaging/oreo-monique-safe.yml), reinserts transformed application classes into a Spring Boot JAR, and verifies preserved libraries/resources. See [scripts/README.md](scripts/README.md).
+- **CI:** Java and Python tests, frontend typecheck/build and a real Compose smoke test. Protection requires an authorized external OreoObfuscator tool/license and is not part of the default build.
+
+**Still not implemented:** one-click end-user installers, Tauri native desktop, real OAuth/membership billing, Java-native CLI distribution, actual remote SSH execution or protected production binaries. Do not use the prototype for production credentials.
+
+
 ## Development / deployment
 
 The production deployment procedure will be documented after the backend, UI, database, and authentication are implemented and validated. Do **not** place real root passwords, SSH keys, API tokens or production hosts in an untested development build. Use sandbox VPSs and disposable test data for the first end-to-end scenarios.

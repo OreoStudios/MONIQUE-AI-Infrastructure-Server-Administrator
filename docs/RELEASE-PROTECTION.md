@@ -76,3 +76,7 @@ Obfuscation does **not** replace proper authorization, access control, secure se
 **Current state:** this page is a design and release gate. MONIQUE does not yet have OreoObfuscator wired into Maven, CI, its installer or its runtime.
 
 See [Security](SECURITY.md), [Licensing](LICENSING-AND-BILLING.md), [Spring stack](SPRING-STACK.md), [Installation](INSTALLATION-AND-ONBOARDING.md), [ADR 0007](adr/0007-oreo-obfuscator-release-protection.md).
+
+## First code increment
+
+The Java 21 conservative OreoObfuscator profile is now at [packaging/oreo-monique-safe.yml](../packaging/oreo-monique-safe.yml). The opt-in [scripts/protect_release.py](../scripts/protect_release.py) calls the real CLI and verifies preservation of Spring Boot loader/nested dependencies while rebuilding transformed BOOT-INF/classes. Standard-library packaging tests are in [scripts/tests](../scripts/tests). The actual OreoObfuscator tool run and resulting protected Spring startup remain **unverified** until an authorized tool build and full post-transform integration tests are available.

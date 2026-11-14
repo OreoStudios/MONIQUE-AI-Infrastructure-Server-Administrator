@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +21,54 @@ jobs:
           cache-dependency-path: backend/pom.xml
       - name: Backend unit tests
         run: mvn -B -f backend/pom.xml test
-      - name: CLI and packaging tests
+      - name: Python CLI and packaging tests
         run: |
           python3 -m unittest discover -s cli/tests -v
           python3 -m unittest discover -s scripts/tests -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: React TypeScript frontend build
+        working-directory: frontend
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+  compose-smoke:
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate temporary test-only credentials
+        run: |
+          echo "MONIQUE_ADMIN_TOKEN=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "MONIQUE_ENCRYPTION_KEY_BASE64=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+          echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+      - name: Build and launch the real Docker Compose stack
+        run: docker compose up -d --build
+      - name: Test secured API and frontend through Nginx
+        run: |
+          ok=0
+          for i in $(seq 1 50); do
+            if curl -fsS -H "Authorization: Bearer $MONIQUE_ADMIN_TOKEN" \
+                http://127.0.0.1:8088/api/status -o /tmp/monique-status.json; then
+              ok=1
+              break
+            fi
+            sleep 4
+          done
+          test "$ok" = "1"
+          python3 -c 'import json; data=json.load(open("/tmp/monique-status.json")); assert data["name"]=="MONIQUE" and not data["executionEnabled"]'
+          curl -fsS http://127.0.0.1:8088/ | grep -q 'MONIQUE'
+          curl -fsS -H "Authorization: Bearer $MONIQUE_ADMIN_TOKEN" \
+              http://127.0.0.1:8088/api/pods -o /tmp/monique-pods.json
+          python3 -c 'import json; assert json.load(open("/tmp/monique-pods.json"))==[]'
+          unauthorized=$(curl -s -o /dev/null -w "%{http_code}" \
+              http://127.0.0.1:8088/api/pods)
+          test "$unauthorized" != "200"
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail=120
+      - name: Clean up disposable CI environment
+        if: always()
+        run: docker compose down -v --remove-orphans

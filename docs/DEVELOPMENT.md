@@ -110,3 +110,7 @@ Unobfuscated developer builds remain available for debugging. A future, **releas
 The actual invocation/configuration must be derived from the pinned obfuscator's supported options; **no CLI command or CI workflow has been implemented yet**. `mapping.json` and private CI credentials must never be published.
 
 See [Release Protection](RELEASE-PROTECTION.md).
+
+## Code now available
+
+The MONIQUE development CLI lives at [cli/README.md](../cli/README.md); the first React/Vite dashboard at [frontend/README.md](../frontend/README.md) now implements the frontend service used by Compose. The [protected-release script](../scripts/README.md) invokes OreoObfuscator when installed and authorized. CI covers backend tests, CLI and repackaging tests, React builds and disposable Docker Compose startup. See the README checkpoint for current implementation limitations.
