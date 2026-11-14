@@ -1,0 +1,51 @@
+# Conservative first MONIQUE Java 21 profile.
+# Class keep-rules are EXACT names; never use unsupported wildcard patterns.
+mode: standard
+profile: safe
+mapping-output: mapping.json
+keep-line-numbers: true
+keep-source-file: true
+keep-local-vars: true
+keep-param-names: true
+keep-rules:
+  - "fr.oreostudios.monique.MoniqueApplication"
+  - "fr.oreostudios.monique.ai.AiController"
+  - "fr.oreostudios.monique.ai.AiController$ChatRequest"
+  - "fr.oreostudios.monique.ai.AiController$ChatResponse"
+  - "fr.oreostudios.monique.api.ApiController"
+  - "fr.oreostudios.monique.api.ApiErrorHandler"
+  - "fr.oreostudios.monique.pods.PodController"
+  - "fr.oreostudios.monique.pods.PodModels"
+  - "fr.oreostudios.monique.pods.PodModels$AddressInput"
+  - "fr.oreostudios.monique.pods.PodModels$CreatePod"
+  - "fr.oreostudios.monique.pods.PodModels$AddressView"
+  - "fr.oreostudios.monique.pods.PodModels$PodView"
+  - "fr.oreostudios.monique.pods.PodService"
+  - "fr.oreostudios.monique.security.SecurityConfig"
+  - "fr.oreostudios.monique.security.BearerAuthFilter"
+  - "fr.oreostudios.monique.security.SecretCipher"
+
+# AddressValidator is the deliberately unkept, internal-only rename candidate.
+rename:
+  enabled: true
+  rename-packages: false
+  rename-classes: true
+  rename-methods: false
+  rename-fields: false
+  rename-locals: false
+  rename-params: false
+  name-mode: ascii
+unicode:
+  enabled: false
+strings:
+  enabled: false
+numbers:
+  enabled: false
+control-flow:
+  enabled: false
+virtualization:
+  enabled: false
+resources:
+  enabled: false
+minecraft:
+  enabled: false
