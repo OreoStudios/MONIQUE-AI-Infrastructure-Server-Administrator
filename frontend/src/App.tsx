@@ -307,7 +307,7 @@ export default function App() {
           role: "assistant",
           content: "I couldn't complete that request: " +
             (err instanceof Error ? err.message : "The AI provider is unavailable.") +
-            "\\n\\n[Planning only — nothing was executed]",
+            "\n\n[Planning only — nothing was executed]",
         }]);
       }
     } finally {
