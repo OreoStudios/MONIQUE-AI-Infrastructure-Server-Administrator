@@ -228,7 +228,7 @@ nav { display: grid; gap: 6px; }
 .chat-workspace .chat-layout {
   width: 100%;
   max-width: none;
-  height: calc(100dvh - 78px - 2 * clamp(20px, 2.5vw, 42px));
+  height: calc(100dvh - 162px);
   min-height: 560px;
   margin: 0;
   padding: 0;
