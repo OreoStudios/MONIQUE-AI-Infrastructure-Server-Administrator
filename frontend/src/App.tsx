@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { api, type ChatResponse, type Pod, type Status } from "./api";
+import { moniqueAvatar } from "./moniqueAvatar";
 
 type View = "overview" | "pods" | "chat";
 type Message = { role: "assistant" | "user"; content: string };
@@ -13,6 +14,38 @@ const emptyPod = {
   credential: "",
   addresses: "",
 };
+
+/**
+ * The decorative scene uses the user's typing footage. Both versions are muted,
+ * play inline, and loop natively without replay controls or a visible gap.
+ * The dark overlay preserves text contrast over constantly changing frames.
+ */
+function MoniqueBackdrop() {
+  return (
+    <div className="monique-backdrop" aria-hidden="true">
+      <video
+        className="monique-backdrop-video"
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        disablePictureInPicture
+        poster={moniqueAvatar}
+      >
+        <source src="/media/monique-typing-wide.mp4" type="video/mp4" media="(min-width: 900px)" />
+        <source src="/media/monique-typing.mp4" type="video/mp4" />
+      </video>
+      <div className="monique-backdrop-wash" />
+    </div>
+  );
+}
+
+function MoniqueChatAvatar() {
+  return <span className="message-avatar monique-message-avatar" aria-label="MONIQUE AI">
+    <img src={moniqueAvatar} alt="" width={40} height={40} draggable={false} />
+  </span>;
+}
 
 export default function App() {
   const [draftToken, setDraftToken] = useState("");
@@ -152,6 +185,7 @@ export default function App() {
   if (!token) {
     return (
       <div className="login-page">
+        <MoniqueBackdrop />
         <div className="login-glow" />
         <form className="login-card" onSubmit={(event) => void connect(event)}>
           <div className="logo large">M</div>
@@ -181,6 +215,7 @@ export default function App() {
 
   return (
     <div className="shell">
+      <MoniqueBackdrop />
       <aside className="sidebar">
         <div className="brand"><div className="logo">M</div><span>MONIQUE <small>AI INFRASTRUCTURE</small></span></div>
         <div className="nav-label">WORKSPACE</div>
@@ -279,11 +314,16 @@ export default function App() {
             <div className="messages" aria-live="polite">
               {messages.map((message, i) => (
                 <div key={i} className={"message " + message.role}>
-                  <span className="message-avatar">{message.role === "assistant" ? "M" : "You"}</span>
+                  {message.role === "assistant" ? <MoniqueChatAvatar /> : <span className="message-avatar user-message-avatar">You</span>}
                   <p>{message.content}</p>
                 </div>
               ))}
-              {busy && <p className="thinking">MONIQUE is thinking…</p>}
+              {busy && <div className="message assistant" aria-live="polite">
+                <MoniqueChatAvatar />
+                <p className="typing-indicator" aria-label="MONIQUE is thinking">
+                  <span /><span /><span />
+                </p>
+              </div>}
             </div>
             <form className="composer" onSubmit={(e) => void sendChat(e)}>
               <textarea aria-label="Chat with MONIQUE" rows={3} placeholder="Ask MONIQUE to plan a safe server operation…" value={prompt} onChange={(e) => setPrompt(e.target.value)} maxLength={8000} />
