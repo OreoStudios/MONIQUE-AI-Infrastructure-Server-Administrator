@@ -33,7 +33,8 @@ function MoniqueBackdrop() {
         disablePictureInPicture
         poster={moniqueAvatar}
       >
-        <source src="/media/monique-typing-wide.mp4" type="video/mp4" media="(min-width: 900px)" />
+        {/* Full-bleed background: never select the desktop letterboxed composite.
+            Cover/crop is handled by CSS for every viewport size. */}
         <source src="/media/monique-typing.mp4" type="video/mp4" />
       </video>
       <div className="monique-backdrop-wash" />
