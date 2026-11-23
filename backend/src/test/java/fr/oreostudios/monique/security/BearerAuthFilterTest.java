@@ -27,6 +27,21 @@ class BearerAuthFilterTest {
     }
 
     @Test
+    void browserCookieWorksWhenReverseProxyAlsoSendsBasicAuthorization() throws Exception {
+        var sessions = mock(AdminSessionService.class);
+        when(sessions.fromRequest(any())).thenReturn(
+                new AdminSessionService.Session("valid-csrf", Instant.now().plusSeconds(3600)));
+        var request = new MockHttpServletRequest("POST", "/api/ai/chat");
+        request.addHeader("Authorization", "Basic unrelated-proxy-credentials");
+        request.addHeader("X-MONIQUE-CSRF", "valid-csrf");
+        request.setCookies(new Cookie("MONIQUE_SESSION", "opaque"));
+        var response = new MockHttpServletResponse();
+        new BearerAuthFilter(TOKEN, sessions).doFilter(request, response, new MockFilterChain());
+        assertEquals(200, response.getStatus());
+        verify(sessions).fromRequest(any());
+    }
+
+    @Test
     void bearerClientCanStillMakeAuthenticatedApiCalls() throws Exception {
         var sessions = mock(AdminSessionService.class);
         var request = new MockHttpServletRequest("POST", "/api/ai/chat");
