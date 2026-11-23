@@ -50,3 +50,18 @@ To activate it, add two files to [public/media](public/media/README.md):
 The provided asset ZIP has both videos prepared from the original user-supplied video. Put both MP4s into `frontend/public/media/` in GitHub (upload to the feature branch) before merging/deploying for a fully animated background. Vite copies this folder to the built frontend root. Missing video files do not break authentication, API access, or navigation; they just remove the live background.
 
 Assistant chat avatars use the generated portrait embedded at `src/moniqueAvatar.ts`; the animated three-dot response indicator appears while awaiting an AI reply. No SSH or backend execution capabilities are added by this visual-only change.
+
+
+## MONIQUE live two-way voice (WebRTC)
+
+The **AI Chat** page now includes a separate **Start voice conversation** control. It reuses the existing left-hand Monique video portrait: the normal typing video runs while idle, and the existing speaking-and-typing video is displayed when OpenAI reports that output audio is playing. This is an animation, **not word-accurate lip sync**.
+
+The microphone is requested only after the operator clicks Start. Audio travels directly between the browser and OpenAI via WebRTC; the Spring Boot backend mints a 60-second ephemeral credential at the authenticated `POST /api/voice/session` endpoint. The permanent `OPENAI_API_KEY` is never sent to the browser and is not stored in localStorage. The frontend uses WebRTC audio for playback and Realtime data-channel transcript/audio-buffer events for the chat transcript and video state.
+
+**Deployment:** set `OPENAI_API_KEY` as a runtime secret in Coolify. Optionally set `MONIQUE_VOICE_MODEL=gpt-realtime-2.1-mini` and `MONIQUE_VOICE_NAME=marin`. Your existing `MONIQUE_ADMIN_TOKEN` still protects session issuance. You don't need a new public port or a Coolify proxy. The web app must be served over HTTPS for microphone access; `frontend/nginx.conf` allows outbound requests to `https://api.openai.com` through CSP. The browser also needs outbound WebRTC connectivity to OpenAI. Keep your CloudPanel reverse proxy as-is.
+
+**Privacy and billing:** speech is sent to OpenAI. Voice is opt-in, stops when Chat is left or the tab is hidden, and is capped by the browser UI at 15 minutes per activation. The backend limits token creation to 4 per minute and 20 per hour per running instance (single-admin development preview). Configure provider budget limits separately; these frontend limits are **not** a hard provider billing cap. Audio input transcription is an optional separately billed model configured in the session; turns are not persisted to PostgreSQL.
+
+**Safety:** The voice session has no tools and cannot execute SSH commands or control Pods. It uses planning-only server instructions and a short reply length. Do not dictate server secrets, passwords or private keys. Keep this prototype behind additional access controls before storing real infrastructure credentials.
+
+**Manual test:** load the HTTPS dashboard and sign in using the admin token. In AI Chat, click Start voice conversation, grant microphone permission, speak a question, and verify that Monique answers aloud, the avatar switches videos during output audio, a transcript appears in the chat, and the End/Mute controls work. Confirm that navigating away, hiding the tab, and disconnecting all terminate the microphone. If there is no provider key, the voice control reports a configuration error instead of exposing credentials.
