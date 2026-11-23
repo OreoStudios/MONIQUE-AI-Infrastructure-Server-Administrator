@@ -70,6 +70,42 @@ jobs:
           unauthorized=$(curl --max-time 5 -s -o /dev/null -w "%{http_code}" \
               http://127.0.0.1:8088/api/pods)
           test "$unauthorized" != "200"
+
+          # Regression: the previous release accidentally turned a blocked
+          # chat POST into HTTP 401 and the React client logged the admin out.
+          # Exercise the real browser cookie + CSRF flow, not just Bearer GETs.
+          printf '{"token":"%s"}' "$MONIQUE_ADMIN_TOKEN" | \
+              curl --max-time 8 -fsS -X POST \
+                -H "Content-Type: application/json" \
+                -c /tmp/monique-admin-cookies \
+                --data-binary @- \
+                http://127.0.0.1:8088/api/auth/login \
+                -o /tmp/monique-admin-login.json
+          csrf=$(python3 -c 'import json; print(json.load(open("/tmp/monique-admin-login.json"))["csrf"])')
+          test -n "$csrf"
+          # Request body intentionally has an invalid AI provider. If the
+          # cookie/CSRF is accepted, MONIQUE's controller returns HTTP 400,
+          # before any chargeable OpenAI/Anthropic provider call.
+          chat_status=$(curl --max-time 8 -s -o /tmp/monique-chat-check.json -w "%{http_code}" \
+              -X POST -b /tmp/monique-admin-cookies \
+              -H "Content-Type: application/json" \
+              -H "X-MONIQUE-CSRF: $csrf" \
+              --data '{"message":"auth-smoke-test","provider":"UNKNOWN"}' \
+              http://127.0.0.1:8088/api/ai/chat)
+          test "$chat_status" = "400"
+          # A missing CSRF must be 403, NOT 401. The real session must remain
+          # active after a denied POST.
+          blocked_status=$(curl --max-time 8 -s -o /dev/null -w "%{http_code}" \
+              -X POST -b /tmp/monique-admin-cookies \
+              -H "Content-Type: application/json" \
+              --data '{"message":"auth-smoke-test","provider":"UNKNOWN"}' \
+              http://127.0.0.1:8088/api/ai/chat)
+          test "$blocked_status" = "403"
+          curl --max-time 8 -fsS -b /tmp/monique-admin-cookies \
+              http://127.0.0.1:8088/api/auth/session \
+              -o /tmp/monique-admin-restored.json
+          python3 -c 'import json; assert json.load(open("/tmp/monique-admin-restored.json"))["authenticated"]'
+          # Sensitive credentials and CSRF values are intentionally not logged.
       - name: Logs on failure
         if: failure()
         run: docker compose logs --tail=120
