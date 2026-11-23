@@ -304,7 +304,10 @@ export default function App() {
       } else {
         showRequestError(err, "AI provider could not answer");
         setMessages((previous) => [...previous, {
-          role: "assistant", content: "The request failed. Check your configured AI provider key and MONIQUE connection.",
+          role: "assistant",
+          content: "I couldn't complete that request: " +
+            (err instanceof Error ? err.message : "The AI provider is unavailable.") +
+            "\n\n[Planning only — nothing was executed]",
         }]);
       }
     } finally {
@@ -443,7 +446,7 @@ export default function App() {
             <MoniqueChatVideo isReplying={chatPending || voiceSpeaking} />
             <div className="content chat-layout">
             <div className="chat-heading"><div><p className="eyebrow">AI INFRASTRUCTURE ASSISTANT</p><h1>Talk to MONIQUE</h1></div><span className="status-chip caution">Planning only</span></div>
-            <div className="chat-options"><label>Provider <select value={provider} onChange={(e) => setProvider(e.target.value as "CLAUDE" | "CODEX")}><option value="CLAUDE">Claude</option><option value="CODEX">OpenAI</option></select></label>
+            <div className="chat-options"><label>Provider <select value={provider} onChange={(e) => setProvider(e.target.value as "CLAUDE" | "CODEX")}><option value="CLAUDE">Claude</option><option value="CODEX">OpenAI · Advanced Reasoning</option></select></label>
               <label>Pod context <select value={selectedPod} onChange={(e) => setSelectedPod(e.target.value)}><option value="">No Pod selected</option>{pods.map((pod) => <option key={pod.id} value={pod.id}>{pod.name}</option>)}</select></label>
             </div>
             <VoicePanel

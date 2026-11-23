@@ -127,6 +127,25 @@ async function request<T>(route: string, options: RequestInit = {}): Promise<T> 
   }
 
   if (!response.ok) {
+    // Only accept safe, structured provider error messages emitted by MONIQUE.
+    // Never display arbitrary upstream bodies or proxy HTML responses.
+    let providerMessage: string | undefined;
+    if ((response.headers.get("content-type") || "").includes("application/json")) {
+      try {
+        const body: unknown = await response.clone().json();
+        if (body && typeof body === "object" && "code" in body && "message" in body) {
+          const issue = body as { code?: unknown; message?: unknown };
+          if (typeof issue.code === "string"
+              && /^(OPENAI|ANTHROPIC)_[A-Z_]+$/.test(issue.code)
+              && typeof issue.message === "string"
+              && issue.message.length <= 500) {
+            providerMessage = issue.message;
+          }
+        }
+      } catch {
+        // Unstructured error: report its status without leaking content.
+      }
+    }
     if (response.status === 401 && isAuthEndpoint) throw new AuthenticationRequiredError();
     if (response.status === 401) {
       throw new ApiRequestError(401,
@@ -136,7 +155,7 @@ async function request<T>(route: string, options: RequestInit = {}): Promise<T> 
       throw new ApiRequestError(403,
         "The chat request was blocked by a security check (HTTP 403). Your admin session is not necessarily expired.");
     }
-    throw new ApiRequestError(response.status);
+    throw new ApiRequestError(response.status, providerMessage);
   }
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;

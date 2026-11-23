@@ -76,3 +76,25 @@ The frontend restores authentication using `GET /api/auth/session` and its CSRF 
 The new `admin_sessions` table is automatically created by the existing PostgreSQL `schema.sql` initializer on startup. Hibernate validates its JPA mapping without editing Pod or audit storage. No changes to CloudPanel/Nginx, external ports, Wings, or Pterodactyl are required. Keep `MONIQUE_WEB_ORIGIN=https://monique.oreostudios.fr` in Coolify so the session cookie is Secure.
 
 **Manual verification**: log in, reload the page, enter AI Chat and send multiple messages; refresh again and confirm the dashboard remains authenticated. Restart only the MONIQUE backend and verify the session restores. Test logout, CSRF rejection, admin-token rotation, and automatic return to login on a 401. If the provider returns 502/503, an error appears inside the dashboard without suggesting the administrator session expired.
+
+
+## Advanced OpenAI sysadmin reasoning and provider diagnostics
+
+MONIQUE's OpenAI text chat now defaults to **`gpt-6.2-astra`** with **`reasoning.effort=max`** via the Responses API. The output budget is 16,000 tokens including hidden reasoning tokens. The model gives advanced change-planning guidance, **not actual access to server systems**: the application still has no SSH execution or remote-control tools. Any proposed operations require verified context, impact/risk analysis, backups, rollback, and explicit human approval.
+
+In **Coolify → MONIQUE AI → Environment Variables**, set the following **runtime** values:
+
+```dotenv
+OPENAI_API_KEY=<your private OpenAI API project key>
+MONIQUE_CODEX_MODEL=gpt-6.2-astra
+MONIQUE_CODEX_REASONING_EFFORT=max
+MONIQUE_CODEX_MAX_OUTPUT_TOKENS=16000
+```
+
+Existing Coolify variables take precedence over `compose.yaml` defaults. **If MONIQUE_CODEX_MODEL still says `gpt-5.1-codex`, replace it explicitly**, even though the repository's default was upgraded. Never commit an API key into Git or send it in chat. API billing, API project model access, and rate limits are separate from a ChatGPT subscription.
+
+The backend now returns a safe `{ "code": "OPENAI_...", "message": "..." }` for provider failures, and the React chat displays that message instead of the previous generic error. The response never forwards provider raw error bodies or API keys. Troubleshooting codes include `OPENAI_KEY_MISSING`, `OPENAI_KEY_REJECTED`, `OPENAI_MODEL_UNAVAILABLE`, `OPENAI_ACCESS_DENIED`, `OPENAI_BILLING_LIMIT`, `OPENAI_RATE_LIMIT`, and `OPENAI_OUTPUT_LIMIT`. Provider API errors must **not** be confused with MONIQUE admin sessions.
+
+GPT-6.2 Astra is a premium model, and `max` reasoning may be slower and cost significantly more than a smaller model. The configured output budget is a per-request cap, not a guaranteed cost ceiling. OpenAI voice chat remains a separate Realtime model. The reverse proxy must allow long-running Responses API calls; the bundled Nginx increases the backend read timeout to 300 seconds, but an outer CloudPanel proxy may have its own timeout.
+
+Test after redeploy: sign in, choose **OpenAI · Advanced Reasoning**, send a simple message, and inspect the displayed provider diagnostics if it fails. Validate actual access and billing at https://platform.openai.com/ rather than relying on a ChatGPT plan.

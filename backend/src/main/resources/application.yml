@@ -20,6 +20,8 @@ server:
 monique:
   web-origin: ${MONIQUE_WEB_ORIGIN:http://localhost:5173}
   claude-model: ${MONIQUE_CLAUDE_MODEL:claude-sonnet-4-5}
-  codex-model: ${MONIQUE_CODEX_MODEL:gpt-5.1-codex}
+  codex-model: ${MONIQUE_CODEX_MODEL:gpt-6.2-astra}
+  codex-reasoning-effort: ${MONIQUE_CODEX_REASONING_EFFORT:max}
+  codex-max-output-tokens: ${MONIQUE_CODEX_MAX_OUTPUT_TOKENS:16000}
   voice-model: ${MONIQUE_VOICE_MODEL:gpt-realtime-2.1-mini}
   voice-name: ${MONIQUE_VOICE_NAME:marin}
