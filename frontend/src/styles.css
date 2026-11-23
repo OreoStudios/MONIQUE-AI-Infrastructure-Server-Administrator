@@ -332,3 +332,38 @@ nav { display: grid; gap: 6px; }
   .chat-avatar-video { display: none; }
   .chat-avatar-video.speaking { transition: none; }
 }
+
+
+/* Live two-way voice controls inside the existing MONIQUE chat panel. */
+.voice-panel {
+  border: 1px solid rgba(126, 114, 205, .46);
+  background: rgba(25, 29, 56, .88);
+  border-radius: 13px;
+  padding: 15px;
+  margin-bottom: 12px;
+  backdrop-filter: blur(12px);
+}
+.voice-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.voice-heading > div { display: flex; flex-direction: column; gap: 5px; }
+.voice-heading strong { color: #eae5ff; font-size: .87rem; }
+.voice-heading span { color: #a2aec8; font-size: .73rem; }
+.voice-status {
+  flex-shrink: 0;
+  padding: 5px 9px;
+  border-radius: 99px;
+  border: 1px solid #53617b;
+  color: #b2b9d0;
+  font-size: .7rem;
+}
+.voice-status.connected { color: #81e6bf; border-color: #2b7c62; }
+.voice-status.connecting { color: #d6c1ff; border-color: #8466c0; }
+.voice-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.voice-buttons .primary, .voice-buttons .secondary { font-size: .76rem; padding: 9px 12px; }
+.voice-buttons button:focus-visible { outline: 2px solid #bb9aff; outline-offset: 3px; }
+.voice-caption { color: #e0d8ff; font-size: .82rem; margin: 12px 0 0; }
+.voice-error { color: #ffc1c7; font-size: .78rem; margin: 11px 0 0; }
+.voice-privacy { color: #8290ac; font-size: .68rem; line-height: 1.45; margin: 12px 0 0; }
+@media (max-width: 780px) {
+  .voice-heading { flex-wrap: wrap; }
+  .voice-buttons button { min-height: 40px; }
+}
