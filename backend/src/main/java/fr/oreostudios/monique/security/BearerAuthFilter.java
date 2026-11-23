@@ -57,7 +57,12 @@ public final class BearerAuthFilter extends OncePerRequestFilter {
                         || request.getMethod().equals("OPTIONS");
                 if (!readOnly && !AdminSessionService.validCsrf(
                         session, request.getHeader("X-MONIQUE-CSRF"))) {
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid CSRF token");
+                    // Do not redispatch into a protected /error handler: that can
+                    // turn a CSRF 403 into a misleading 401 ("session expired").
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setHeader("Cache-Control", "no-store");
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\":\"csrf_validation_failed\"}");
                     return;
                 }
                 authenticate();
