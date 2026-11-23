@@ -41,11 +41,41 @@ export class AuthenticationRequiredError extends Error {
 }
 
 export class ApiRequestError extends Error {
-  constructor(public readonly status: number) {
-    super(status === 403
-      ? "Request rejected (HTTP 403). Refresh to renew your session before retrying."
-      : "MONIQUE API returned HTTP " + status);
+  constructor(public readonly status: number, message?: string) {
+    super(message ?? (status === 403
+      ? "MONIQUE rejected this request (HTTP 403). Your admin login may still be active."
+      : "MONIQUE API returned HTTP " + status));
     this.name = "ApiRequestError";
+  }
+}
+
+/**
+ * Independently verify the cookie with Spring Security before claiming that
+ * the administrator was logged out. A 401 emitted by a protected /error
+ * dispatch, reverse proxy, or endpoint is not proof of cookie expiry.
+ *
+ * Returns "unknown" on infrastructure/network errors rather than logging
+ * out an operator who might still be authenticated.
+ */
+async function checkBrowserSession(): Promise<"active" | "expired" | "unknown"> {
+  try {
+    const response = await fetch("/api/auth/session", {
+      method: "GET",
+      credentials: "same-origin",
+      redirect: "error",
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+    if (response.status === 401) return "expired";
+    if (!response.ok) return "unknown";
+    const session = (await response.json()) as AdminSession;
+    if (session.authenticated !== true || typeof session.csrf !== "string" || !session.csrf) {
+      return "unknown";
+    }
+    csrfToken = session.csrf;
+    return "active";
+  } catch {
+    return "unknown";
   }
 }
 
@@ -54,24 +84,58 @@ async function request<T>(route: string, options: RequestInit = {}): Promise<T> 
     throw new Error("Invalid MONIQUE API route");
   }
   const method = (options.method || "GET").toUpperCase();
-  const headers = new Headers(options.headers);
-  headers.set("Accept", "application/json");
-  if (options.body) headers.set("Content-Type", "application/json");
-  if (!["GET", "HEAD", "OPTIONS"].includes(method) && route !== "/auth/login") {
-    if (!csrfToken) throw new AuthenticationRequiredError();
-    headers.set("X-MONIQUE-CSRF", csrfToken);
+  const unsafe = !["GET", "HEAD", "OPTIONS"].includes(method);
+  const isLogin = route === "/auth/login";
+  const isAuthEndpoint = route.startsWith("/auth/");
+
+  // A missing CSRF token after HMR/reload must not be mistaken for an expired
+  // admin session. First recover the current token from the authenticated API.
+  if (unsafe && !isLogin && !csrfToken) {
+    const state = await checkBrowserSession();
+    if (state === "expired") throw new AuthenticationRequiredError();
+    if (state !== "active") {
+      throw new ApiRequestError(0, "Unable to verify the admin session. Please retry.");
+    }
   }
 
-  const response = await fetch("/api" + route, {
-    ...options,
-    method,
-    credentials: "same-origin",
-    redirect: "error",
-    cache: "no-store",
-    headers,
-  });
+  const send = () => {
+    const headers = new Headers(options.headers);
+    headers.set("Accept", "application/json");
+    if (options.body) headers.set("Content-Type", "application/json");
+    if (unsafe && !isLogin) headers.set("X-MONIQUE-CSRF", csrfToken);
+    return fetch("/api" + route, {
+      ...options,
+      method,
+      credentials: "same-origin",
+      redirect: "error",
+      cache: "no-store",
+      headers,
+    });
+  };
+
+  let response = await send();
+  if (!response.ok && (response.status === 401 || response.status === 403) && !isAuthEndpoint) {
+    const state = await checkBrowserSession();
+    if (state === "expired") throw new AuthenticationRequiredError();
+    if (state === "active") {
+      // One retry after recovering the authoritative CSRF value. The backend
+      // rejects unauthenticated writes before executing any business action.
+      response = await send();
+    }
+    // If verification could not finish, preserve the UI session rather than
+    // forcing a logout on ambiguous proxy/provider errors.
+  }
+
   if (!response.ok) {
-    if (response.status === 401) throw new AuthenticationRequiredError();
+    if (response.status === 401 && isAuthEndpoint) throw new AuthenticationRequiredError();
+    if (response.status === 401) {
+      throw new ApiRequestError(401,
+        "The chat request returned HTTP 401, but your admin session could not be confirmed as expired. Please retry.");
+    }
+    if (response.status === 403) {
+      throw new ApiRequestError(403,
+        "The chat request was blocked by a security check (HTTP 403). Your admin session is not necessarily expired.");
+    }
     throw new ApiRequestError(response.status);
   }
   if (response.status === 204) return undefined as T;
