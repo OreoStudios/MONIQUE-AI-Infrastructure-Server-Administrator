@@ -65,3 +65,14 @@ The microphone is requested only after the operator clicks Start. Audio travels 
 **Safety:** The voice session has no tools and cannot execute SSH commands or control Pods. It uses planning-only server instructions and a short reply length. Do not dictate server secrets, passwords or private keys. Keep this prototype behind additional access controls before storing real infrastructure credentials.
 
 **Manual test:** load the HTTPS dashboard and sign in using the admin token. In AI Chat, click Start voice conversation, grant microphone permission, speak a question, and verify that Monique answers aloud, the avatar switches videos during output audio, a transcript appears in the chat, and the End/Mute controls work. Confirm that navigating away, hiding the tab, and disconnecting all terminate the microphone. If there is no provider key, the voice control reports a configuration error instead of exposing credentials.
+
+
+## Persistent administrator sessions (Spring Security + Spring Data JPA)
+
+MONIQUE now exchanges the administrator token at `POST /api/auth/login` for an opaque, random, **HttpOnly** cookie (`SameSite=Strict`, `Secure` on HTTPS, `Path=/api`). The admin token is no longer sent on every React request and is **never saved in browser storage**. The backend hashes the session ID before storing its record in PostgreSQL through Spring Data JPA. Session records persist across backend restarts and Coolify redeployments; the cookie has a maximum lifetime of 12 hours. Rotating `MONIQUE_ADMIN_TOKEN` invalidates older sessions automatically.
+
+The frontend restores authentication using `GET /api/auth/session` and its CSRF value; it explicitly signs out with `POST /api/auth/logout`. All cookie-authenticated unsafe API requests carry a session-bound `X-MONIQUE-CSRF` header, including voice credential issuance. Legacy direct Bearer clients continue working. A true HTTP 401 returns the UI to the login form; API errors such as 502/503 do **not** falsely log the user out.
+
+The new `admin_sessions` table is automatically created by the existing PostgreSQL `schema.sql` initializer on startup. Hibernate validates its JPA mapping without editing Pod or audit storage. No changes to CloudPanel/Nginx, external ports, Wings, or Pterodactyl are required. Keep `MONIQUE_WEB_ORIGIN=https://monique.oreostudios.fr` in Coolify so the session cookie is Secure.
+
+**Manual verification**: log in, reload the page, enter AI Chat and send multiple messages; refresh again and confirm the dashboard remains authenticated. Restart only the MONIQUE backend and verify the session restores. Test logout, CSRF rejection, admin-token rotation, and automatic return to login on a 401. If the provider returns 502/503, an error appears inside the dashboard without suggesting the administrator session expired.
