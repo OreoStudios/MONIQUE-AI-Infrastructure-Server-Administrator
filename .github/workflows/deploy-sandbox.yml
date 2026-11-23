@@ -1,0 +1,87 @@
+name: Deploy MONIQUE to sandbox VPS
+
+# MONIQUE is not compatible with GitHub Pages or permanent GitHub Actions hosting.
+# This workflow deploys the existing Docker Compose stack to a privately accessed test VPS.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: monique-sandbox-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Validate GitHub deployment settings
+        env:
+          DEPLOY_HOST: ${{ vars.MONIQUE_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.MONIQUE_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.MONIQUE_DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.MONIQUE_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_KEY DEPLOY_KNOWN_HOSTS; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing GitHub variable/secret for $name"
+              exit 1
+            fi
+          done
+
+      - name: Configure verified SSH access
+        env:
+          DEPLOY_KEY: ${{ secrets.MONIQUE_DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.MONIQUE_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/monique_deploy"
+          chmod 600 "$HOME/.ssh/monique_deploy"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Deploy selected main commit to sandbox
+        env:
+          DEPLOY_HOST: ${{ vars.MONIQUE_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.MONIQUE_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          ssh -T -i "$HOME/.ssh/monique_deploy" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" "MONIQUE_EXPECTED_SHA='$GITHUB_SHA' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd /opt/monique
+          test -f .env || { echo "Missing /opt/monique/.env"; exit 1; }
+          if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+            echo "Tracked files contain local changes: refusing deployment"
+            exit 1
+          fi
+          git fetch origin main
+          git cat-file -e "$MONIQUE_EXPECTED_SHA^{commit}"
+          git checkout --detach "$MONIQUE_EXPECTED_SHA"
+          docker compose config --quiet
+          docker compose up -d --build --remove-orphans
+
+          # The dashboard is bound to server loopback only (compose.yaml).
+          # A 401 response from /api/status proves the auth boundary is active.
+          for attempt in $(seq 1 30); do
+            if curl --max-time 5 -fsS http://127.0.0.1:8088/ -o /dev/null; then
+              status="$(curl --max-time 5 -s -o /dev/null -w '%{http_code}' \
+                http://127.0.0.1:8088/api/status || true)"
+              if [ "$status" = "401" ]; then
+                echo "MONIQUE sandbox deployed: private dashboard reachable and API protected"
+                docker compose ps
+                exit 0
+              fi
+            fi
+            sleep 5
+          done
+          echo "MONIQUE did not pass the private HTTP readiness check"
+          docker compose ps
+          exit 1
+          REMOTE
