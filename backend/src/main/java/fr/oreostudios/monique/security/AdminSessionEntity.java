@@ -14,8 +14,8 @@ public class AdminSessionEntity {
     @Column(name = "id_hash", length = 64, nullable = false)
     private String idHash;
 
-    @Column(name = "csrf_hash", length = 64, nullable = false)
-    private String csrfHash;
+    @Column(name = "csrf_token", length = 64, nullable = false)
+    private String csrfToken;
 
     @Column(name = "admin_fingerprint", length = 64, nullable = false)
     private String adminFingerprint;
@@ -25,15 +25,15 @@ public class AdminSessionEntity {
 
     protected AdminSessionEntity() {}
 
-    public AdminSessionEntity(String idHash, String csrfHash, String adminFingerprint, Instant expiresAt) {
+    public AdminSessionEntity(String idHash, String csrfToken, String adminFingerprint, Instant expiresAt) {
         this.idHash = idHash;
-        this.csrfHash = csrfHash;
+        this.csrfToken = csrfToken;
         this.adminFingerprint = adminFingerprint;
         this.expiresAt = expiresAt;
     }
 
     public String getIdHash() { return idHash; }
-    public String getCsrfHash() { return csrfHash; }
+    public String getCsrfHash() { return csrfToken; }
     public String getAdminFingerprint() { return adminFingerprint; }
     public Instant getExpiresAt() { return expiresAt; }
 }
