@@ -1,5 +1,6 @@
 package fr.oreostudios.monique.security;
 
+import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,6 +39,10 @@ public class SecurityConfig {
             .exceptionHandling(ex -> ex.authenticationEntryPoint(
                     (request, response, error) -> response.sendError(401, "Authentication required")))
             .authorizeHttpRequests(a -> a
+                // ERROR dispatches must preserve the original 4xx/5xx status.
+                // Requiring login for /error can transform an unrelated 403/502
+                // into 401 and incorrectly log the browser out.
+                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .anyRequest().authenticated())
