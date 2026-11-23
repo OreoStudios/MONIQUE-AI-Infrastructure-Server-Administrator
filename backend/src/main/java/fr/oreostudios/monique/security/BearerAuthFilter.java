@@ -49,7 +49,7 @@ public final class BearerAuthFilter extends OncePerRequestFilter {
         }
         if (bearerAuthenticated) {
             authenticate();
-        } else if (header == null) {
+        } else if (header == null || !header.startsWith("Bearer ")) {
             var session = sessions.fromRequest(request);
             if (session != null) {
                 boolean readOnly = request.getMethod().equals("GET")
