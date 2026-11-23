@@ -79,12 +79,19 @@ async function request<T>(route: string, options: RequestInit = {}): Promise<T> 
 }
 
 export async function loginAdmin(adminToken: string): Promise<AdminSession> {
-  const response = await request<AdminSession>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ token: adminToken }),
-  });
-  csrfToken = response.csrf;
-  return response;
+  try {
+    const response = await request<AdminSession>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ token: adminToken }),
+    });
+    csrfToken = response.csrf;
+    return response;
+  } catch (err) {
+    if (err instanceof AuthenticationRequiredError) {
+      throw new Error("Incorrect administrator token. Check MONIQUE_ADMIN_TOKEN in Coolify.");
+    }
+    throw err;
+  }
 }
 
 export async function restoreAdmin(): Promise<AdminSession> {
