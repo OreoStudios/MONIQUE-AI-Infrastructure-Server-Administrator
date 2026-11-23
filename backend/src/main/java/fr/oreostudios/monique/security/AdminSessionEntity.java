@@ -33,7 +33,7 @@ public class AdminSessionEntity {
     }
 
     public String getIdHash() { return idHash; }
-    public String getCsrfHash() { return csrfToken; }
+    public String getCsrfToken() { return csrfToken; }
     public String getAdminFingerprint() { return adminFingerprint; }
     public Instant getExpiresAt() { return expiresAt; }
 }
