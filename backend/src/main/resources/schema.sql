@@ -22,3 +22,13 @@ CREATE TABLE IF NOT EXISTS audit_events (
   details VARCHAR(255) NOT NULL
 );
 CREATE INDEX IF NOT EXISTS audit_events_at_idx ON audit_events(at DESC);
+
+-- A login session has an opaque random cookie; only its SHA-256 hash is stored
+-- here, so browser logins survive backend restarts without persisting admin tokens.
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  id_hash VARCHAR(64) PRIMARY KEY,
+  csrf_token VARCHAR(64) NOT NULL,
+  admin_fingerprint VARCHAR(64) NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS admin_sessions_expires_idx ON admin_sessions(expires_at);

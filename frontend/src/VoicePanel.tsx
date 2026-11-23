@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { api, ApiRequestError, AuthenticationRequiredError } from "./api";
 
 type VoiceState = "idle" | "connecting" | "connected";
 type VoiceRole = "assistant" | "user";
@@ -21,7 +22,7 @@ type LiveResources = {
 };
 
 type VoicePanelProps = {
-  token: string;
+  onSessionExpired: () => void;
   onSpeakingChange: (speaking: boolean) => void;
   onTranscript: (role: VoiceRole, transcript: string) => void;
 };
@@ -42,7 +43,7 @@ function friendlyError(error: unknown): string {
  * MONIQUE's authenticated backend; the real OPENAI_API_KEY stays server-side.
  * Microphone access starts only on the user's button click.
  */
-export default function VoicePanel({ token, onSpeakingChange, onTranscript }: VoicePanelProps) {
+export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTranscript }: VoicePanelProps) {
   const [state, setState] = useState<VoiceState>("idle");
   const [microphoneMuted, setMicrophoneMuted] = useState(false);
   const [speakerMuted, setSpeakerMuted] = useState(false);
@@ -121,23 +122,22 @@ export default function VoicePanel({ token, onSpeakingChange, onTranscript }: Vo
       resources.stream = mic;
       if (resourcesRef.current !== resources) { mic.getTracks().forEach(t => t.stop()); return; }
 
-      const credentials = await fetch("/api/voice/session", {
-        method: "POST",
-        headers: { Authorization: "Bearer " + token, Accept: "application/json" },
-        credentials: "omit",
-        cache: "no-store",
-        redirect: "error",
-        signal: resources.abort.signal,
-      });
-      if (!credentials.ok) {
-        if (credentials.status === 429) throw new Error("Voice session limit reached. Try again later.");
-        if (credentials.status === 503) throw new Error("Configure OPENAI_API_KEY in Coolify to enable live voice.");
-        if (credentials.status === 401 || credentials.status === 403) throw new Error("Admin token rejected. Reconnect to MONIQUE.");
-        throw new Error("Unable to create a voice session (HTTP " + credentials.status + ").");
+      let data: { value?: unknown };
+      try {
+        data = await api<{ value: string }>("/voice/session", {
+          method: "POST",
+          signal: resources.abort.signal,
+        });
+      } catch (err) {
+        if (err instanceof ApiRequestError && err.status === 429) {
+          throw new Error("Voice session limit reached. Try again later.");
+        }
+        if (err instanceof ApiRequestError && err.status === 503) {
+          throw new Error("Configure OPENAI_API_KEY in Coolify to enable live voice.");
+        }
+        throw err;
       }
-      const data: unknown = await credentials.json();
-      const ephemeralKey = typeof data === "object" && data !== null && "value" in data
-        ? (data as { value?: unknown }).value : null;
+      const ephemeralKey = data.value;
       if (typeof ephemeralKey !== "string" || !ephemeralKey.startsWith("ek_")) {
         throw new Error("Invalid short-lived voice credential.");
       }
@@ -246,11 +246,16 @@ export default function VoicePanel({ token, onSpeakingChange, onTranscript }: Vo
       }, 15 * 60 * 1000);
     } catch (err) {
       if (resourcesRef.current !== resources) return;
-      const message = friendlyError(err);
-      stop();
-      setError(message);
+      if (err instanceof AuthenticationRequiredError) {
+        stop();
+        onSessionExpired();
+      } else {
+        const message = friendlyError(err);
+        stop();
+        setError(message);
+      }
     }
-  }, [token, onTranscript, onSpeakingChange, stop]);
+  }, [onSessionExpired, onTranscript, onSpeakingChange, stop]);
 
   function toggleMic() {
     const current = resourcesRef.current;

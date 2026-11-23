@@ -18,24 +18,30 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http,
            @Value("${MONIQUE_ADMIN_TOKEN:}") String token,
-           @Value("${monique.web-origin}") String webOrigin) throws Exception {
+           @Value("${monique.web-origin}") String webOrigin,
+           AdminSessionService sessions) throws Exception {
         var cors = new CorsConfiguration();
         cors.setAllowedOrigins(List.of(webOrigin));
         cors.setAllowedMethods(List.of("GET", "POST", "DELETE", "OPTIONS"));
-        cors.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-MONIQUE-CSRF"));
+        cors.setAllowCredentials(true);
         cors.setMaxAge(3600L);
         var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", cors);
 
         return http
-            // Header bearer authentication is used, not auto-sent browser cookies.
+            // We use a session-bound CSRF header for cookie-authenticated writes
+            // (enforced in BearerAuthFilter) and a stateless SecurityContext.
             .csrf(csrf -> csrf.disable())
             .cors(c -> c.configurationSource(source))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(
+                    (request, response, error) -> response.sendError(401, "Authentication required")))
             .authorizeHttpRequests(a -> a
                 .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .anyRequest().authenticated())
-            .addFilterBefore(new BearerAuthFilter(token), UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(new BearerAuthFilter(token, sessions), UsernamePasswordAuthenticationFilter.class)
             .build();
     }
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { api, type ChatResponse, type Pod, type Status } from "./api";
+import { api, loginAdmin, restoreAdmin, logoutAdmin, clearAdminSession, AuthenticationRequiredError, type ChatResponse, type Pod, type Status } from "./api";
 import { moniqueAvatar } from "./moniqueAvatar";
 import VoicePanel from "./VoicePanel";
 
@@ -114,7 +114,8 @@ function MoniqueChatAvatar() {
 
 export default function App() {
   const [draftToken, setDraftToken] = useState("");
-  const [token, setToken] = useState("");
+  const [authenticated, setAuthenticated] = useState(false);
+  const [restoring, setRestoring] = useState(true);
   const [status, setStatus] = useState<Status | null>(null);
   const [pods, setPods] = useState<Pod[]>([]);
   const [view, setView] = useState<View>("overview");
@@ -135,38 +136,91 @@ export default function App() {
     setMessages(previous => [...previous, { role, content }]);
   }, []);
 
-  async function refresh(activeToken: string) {
+  const sessionExpired = useCallback(() => {
+    clearAdminSession();
+    setAuthenticated(false);
+    setStatus(null);
+    setPods([]);
+    setBusy(false);
+    setChatPending(false);
+    setVoiceSpeaking(false);
+    setError("Your administrator session expired or was revoked. Please sign in again.");
+  }, []);
+
+  function showRequestError(err: unknown, fallback: string) {
+    if (err instanceof AuthenticationRequiredError) {
+      sessionExpired();
+    } else {
+      setError(err instanceof Error ? err.message : fallback);
+    }
+  }
+
+  async function refresh() {
     const [nextStatus, nextPods] = await Promise.all([
-      api<Status>(activeToken, "/status"),
-      api<Pod[]>(activeToken, "/pods"),
+      api<Status>("/status"),
+      api<Pod[]>("/pods"),
     ]);
     setStatus(nextStatus);
     setPods(nextPods);
   }
+
+  // Restore an HttpOnly cookie session after a reload. No admin token is
+  // persisted in localStorage or sessionStorage.
+  useEffect(() => {
+    let canceled = false;
+    void (async () => {
+      try {
+        await restoreAdmin();
+        const [nextStatus, nextPods] = await Promise.all([
+          api<Status>("/status"),
+          api<Pod[]>("/pods"),
+        ]);
+        if (!canceled) {
+          setStatus(nextStatus);
+          setPods(nextPods);
+          setAuthenticated(true);
+        }
+      } catch (err) {
+        if (!canceled && !(err instanceof AuthenticationRequiredError)) {
+          setError("Could not verify the administrator session. Try signing in again.");
+        }
+      } finally {
+        if (!canceled) setRestoring(false);
+      }
+    })();
+    return () => { canceled = true; };
+  }, []);
 
   async function connect(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     setError("");
     try {
-      await refresh(draftToken);
-      setToken(draftToken);
+      await loginAdmin(draftToken);
       setDraftToken("");
+      setAuthenticated(true);
+      await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not connect");
+      showRequestError(err, "Could not connect");
     } finally {
       setBusy(false);
     }
   }
 
   function disconnect() {
-    setToken("");
+    // Start logout while the CSRF token is still in memory, then unmount
+    // authenticated screens and stop any active voice conversation.
+    void logoutAdmin().catch(() => {});
+    setAuthenticated(false);
     setStatus(null);
     setPods([]);
     setMessages([{ role: "assistant", content: "Welcome back. Connect to begin a new planning conversation." }]);
     setPodForm(emptyPod);
     setPrompt("");
     setError("");
+    setBusy(false);
+    setChatPending(false);
+    setVoiceSpeaking(false);
   }
 
   async function addPod(e: FormEvent<HTMLFormElement>) {
@@ -188,7 +242,7 @@ export default function App() {
             role: line.slice(separator + 1).trim().toUpperCase(),
           };
         });
-      await api<Pod>(token, "/pods", {
+      await api<Pod>("/pods", {
         method: "POST",
         body: JSON.stringify({
           ...podForm,
@@ -198,9 +252,9 @@ export default function App() {
       });
       setPodForm(emptyPod);
       setShowPodForm(false);
-      await refresh(token);
+      await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not register Pod");
+      showRequestError(err, "Could not register Pod");
     } finally {
       setBusy(false);
     }
@@ -213,10 +267,10 @@ export default function App() {
     setBusy(true);
     setError("");
     try {
-      await api<void>(token, "/pods/" + encodeURIComponent(pod.id), { method: "DELETE" });
-      await refresh(token);
+      await api<void>("/pods/" + encodeURIComponent(pod.id), { method: "DELETE" });
+      await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not remove Pod");
+      showRequestError(err, "Could not remove Pod");
     } finally {
       setBusy(false);
     }
@@ -232,7 +286,7 @@ export default function App() {
     setChatPending(true);
     setError("");
     try {
-      const response = await api<ChatResponse>(token, "/ai/chat", {
+      const response = await api<ChatResponse>("/ai/chat", {
         method: "POST",
         body: JSON.stringify({
           message: text,
@@ -245,17 +299,23 @@ export default function App() {
         content: response.answer + (response.executed ? "" : "\n\n[Planning only — nothing was executed]"),
       }]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "AI provider could not answer");
-      setMessages((previous) => [...previous, {
-        role: "assistant", content: "The request failed. Check your configured AI provider key and MONIQUE connection.",
-      }]);
+      if (err instanceof AuthenticationRequiredError) {
+        sessionExpired();
+      } else {
+        showRequestError(err, "AI provider could not answer");
+        setMessages((previous) => [...previous, {
+          role: "assistant", content: "The request failed. Check your configured AI provider key and MONIQUE connection.",
+        }]);
+      }
     } finally {
       setChatPending(false);
       setBusy(false);
     }
   }
 
-  if (!token) {
+  if (restoring) return <div className="login-page"><MoniqueBackdrop /><p className="session-check">Restoring your MONIQUE session…</p></div>;
+
+  if (!authenticated) {
     return (
       <div className="login-page">
         <MoniqueBackdrop />
@@ -280,7 +340,7 @@ export default function App() {
             {busy ? "Connecting…" : "Connect to MONIQUE"}
           </button>
           {error && <p className="alert" role="alert">{error}</p>}
-          <p className="hint">Preview authentication uses your local MONIQUE_ADMIN_TOKEN, not a paid membership. It is held in this tab's memory only.</p>
+          <p className="hint">The admin token is used only to sign in. Your 12-hour session is stored in a secure HttpOnly cookie; no admin token is saved in browser storage.</p>
         </form>
       </div>
     );
@@ -387,7 +447,7 @@ export default function App() {
               <label>Pod context <select value={selectedPod} onChange={(e) => setSelectedPod(e.target.value)}><option value="">No Pod selected</option>{pods.map((pod) => <option key={pod.id} value={pod.id}>{pod.name}</option>)}</select></label>
             </div>
             <VoicePanel
-              token={token}
+              onSessionExpired={sessionExpired}
               onSpeakingChange={setVoiceSpeaking}
               onTranscript={recordVoiceTranscript}
             />

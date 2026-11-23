@@ -367,3 +367,15 @@ nav { display: grid; gap: 6px; }
   .voice-heading { flex-wrap: wrap; }
   .voice-buttons button { min-height: 40px; }
 }
+
+/* Session recovery is shown over the same cinematic login background. */
+.session-check {
+  position: relative;
+  z-index: 1;
+  padding: 20px 24px;
+  border-radius: 15px;
+  background: rgba(12, 21, 38, .85);
+  border: 1px solid #35415e;
+  color: #e8e2ff;
+  font-weight: 700;
+}
