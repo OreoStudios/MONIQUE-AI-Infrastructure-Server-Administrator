@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { api, type ChatResponse, type Pod, type Status } from "./api";
 import { moniqueAvatar } from "./moniqueAvatar";
+import VoicePanel from "./VoicePanel";
 
 type View = "overview" | "pods" | "chat";
 type Message = { role: "assistant" | "user"; content: string };
@@ -120,6 +121,7 @@ export default function App() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [chatPending, setChatPending] = useState(false);
+  const [voiceSpeaking, setVoiceSpeaking] = useState(false);
   const [podForm, setPodForm] = useState(emptyPod);
   const [showPodForm, setShowPodForm] = useState(false);
   const [provider, setProvider] = useState<"CLAUDE" | "CODEX">("CLAUDE");
@@ -128,6 +130,10 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: "Hi, I'm MONIQUE. I can help plan infrastructure operations safely. Actual SSH execution is not available in this preview." },
   ]);
+
+  const recordVoiceTranscript = useCallback((role: Message["role"], content: string) => {
+    setMessages(previous => [...previous, { role, content }]);
+  }, []);
 
   async function refresh(activeToken: string) {
     const [nextStatus, nextPods] = await Promise.all([
@@ -374,12 +380,17 @@ export default function App() {
 
         {view === "chat" && (
           <div className="chat-workspace">
-            <MoniqueChatVideo isReplying={chatPending} />
+            <MoniqueChatVideo isReplying={chatPending || voiceSpeaking} />
             <div className="content chat-layout">
             <div className="chat-heading"><div><p className="eyebrow">AI INFRASTRUCTURE ASSISTANT</p><h1>Talk to MONIQUE</h1></div><span className="status-chip caution">Planning only</span></div>
             <div className="chat-options"><label>Provider <select value={provider} onChange={(e) => setProvider(e.target.value as "CLAUDE" | "CODEX")}><option value="CLAUDE">Claude</option><option value="CODEX">OpenAI</option></select></label>
               <label>Pod context <select value={selectedPod} onChange={(e) => setSelectedPod(e.target.value)}><option value="">No Pod selected</option>{pods.map((pod) => <option key={pod.id} value={pod.id}>{pod.name}</option>)}</select></label>
             </div>
+            <VoicePanel
+              token={token}
+              onSpeakingChange={setVoiceSpeaking}
+              onTranscript={recordVoiceTranscript}
+            />
             <div className="messages" aria-live="polite">
               {messages.map((message, i) => (
                 <div key={i} className={"message " + message.role}>

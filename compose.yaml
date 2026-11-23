@@ -32,6 +32,8 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       MONIQUE_CLAUDE_MODEL: ${MONIQUE_CLAUDE_MODEL:-claude-sonnet-4-5}
       MONIQUE_CODEX_MODEL: ${MONIQUE_CODEX_MODEL:-gpt-5.1-codex}
+      MONIQUE_VOICE_MODEL: ${MONIQUE_VOICE_MODEL:-gpt-realtime-2.1-mini}
+      MONIQUE_VOICE_NAME: ${MONIQUE_VOICE_NAME:-marin}
     networks:
       - private
   frontend:
