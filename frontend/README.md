@@ -35,3 +35,18 @@ npm run build
 Vite proxies /api to http://127.0.0.1:8080 during development. Production is served through frontend/nginx.conf.
 
 Current limitations: no persistent user accounts, paid membership checks, streaming chat, background jobs, real execution workers, or signed desktop installers. All are separate roadmap items.
+
+## Cinematic MONIQUE background and avatar
+
+The dashboard now supports the user's Monique AI typing clip as a full-viewport animated video background on login, overview, Pods, and Chat. The video loops with native HTML5 `loop`, is muted to allow autoplay, has a strong dark scrim over all screens for readability, and has a CSS gradient fallback. With reduced-motion preferences it is hidden.
+
+To activate it, add two files to [public/media](public/media/README.md):
+
+| Browser | File | Encoding |
+|---|---|---|
+| Desktop | `public/media/monique-typing-wide.mp4` | 1280×720 H.264 MP4, silent, `+faststart` |
+| Mobile | `public/media/monique-typing.mp4` | 540×960 H.264 MP4, silent, `+faststart` |
+
+The provided asset ZIP has both videos prepared from the original user-supplied video. Put both MP4s into `frontend/public/media/` in GitHub (upload to the feature branch) before merging/deploying for a fully animated background. Vite copies this folder to the built frontend root. Missing video files do not break authentication, API access, or navigation; they just remove the live background.
+
+Assistant chat avatars use the generated portrait embedded at `src/moniqueAvatar.ts`; the animated three-dot response indicator appears while awaiting an AI reply. No SSH or backend execution capabilities are added by this visual-only change.
