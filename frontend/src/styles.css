@@ -135,19 +135,25 @@ nav { display: grid; gap: 6px; }
     #060d19;
 }
 .monique-backdrop-video {
+  /* Fill the entire browser with the moving footage instead of showing
+     the tall portrait in a narrow, right-hand desktop column. */
+  position: absolute;
+  inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
-  display: block;
+  min-width: 100%;
+  min-height: 100%;
   object-fit: cover;
-  object-position: center;
-  opacity: .82;
+  object-position: 50% 35%;
+  opacity: .86;
 }
 .monique-backdrop-wash {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(5, 10, 22, .94), rgba(6, 11, 24, .81) 45%, rgba(5, 10, 22, .56)),
-    linear-gradient(180deg, rgba(6, 12, 25, .32), rgba(6, 12, 25, .28) 48%, rgba(6, 12, 25, .7));
+    linear-gradient(90deg, rgba(5, 10, 22, .81), rgba(6, 11, 24, .62) 46%, rgba(5, 10, 22, .42)),
+    linear-gradient(180deg, rgba(6, 12, 25, .22), rgba(6, 12, 25, .25) 48%, rgba(6, 12, 25, .63));
 }
 .login-page > .login-glow, .login-page > .login-card,
 .shell > .sidebar, .shell > .main { position: relative; z-index: 1; }
@@ -202,4 +208,127 @@ nav { display: grid; gap: 6px; }
 @media (prefers-reduced-motion: reduce) {
   .monique-backdrop-video { display: none; }
   .monique-message-avatar, .typing-indicator span { animation: none; }
+}
+
+
+/* Chat is a two-column workspace: dedicated Monique video portrait on the
+   left (the marked rectangle), conversation on the right. Only the Overview
+   gets the full-screen motion background. */
+.chat-workspace {
+  display: grid;
+  grid-template-columns: clamp(230px, 21vw, 300px) minmax(0, 1fr);
+  gap: clamp(16px, 1.5vw, 26px);
+  padding: clamp(20px, 2.5vw, 42px);
+  width: 100%;
+  max-width: 1620px;
+  min-height: calc(100dvh - 78px);
+  margin-inline: auto;
+  align-items: start;
+}
+.chat-workspace .chat-layout {
+  width: 100%;
+  max-width: none;
+  height: calc(100dvh - 162px);
+  min-height: 560px;
+  margin: 0;
+  padding: 0;
+}
+.chat-workspace .messages { min-height: 0; }
+.chat-video-panel {
+  position: relative;
+  width: 100%;
+  height: min(63dvh, 560px);
+  min-height: 390px;
+  margin-top: 22px;
+  border: 1px solid rgba(139, 122, 228, .44);
+  border-radius: 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 45% 40%, rgba(63, 45, 126, .65), transparent 78%),
+    #0c1426;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, .36), 0 0 0 1px rgba(93, 80, 172, .12);
+}
+.chat-video-stage { position: absolute; inset: 0; overflow: hidden; }
+.chat-avatar-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 45%;
+  background: #0c1426;
+  pointer-events: none;
+}
+.chat-avatar-video.speaking {
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+.chat-avatar-video.speaking.is-visible { opacity: 1; }
+.chat-video-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg,
+    rgba(5, 9, 22, .54) 0%,
+    transparent 25%,
+    transparent 55%,
+    rgba(5, 9, 22, .85) 100%);
+}
+.chat-video-topline {
+  position: absolute;
+  top: 17px;
+  left: 17px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #eee9ff;
+  font-size: .73rem;
+  font-weight: 850;
+  letter-spacing: .12em;
+  text-shadow: 0 1px 8px rgba(0,0,0,.85);
+}
+.chat-video-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #81e6bf;
+  box-shadow: 0 0 10px rgba(129,230,191,.75);
+}
+.chat-video-caption {
+  position: absolute;
+  bottom: 20px;
+  left: 17px;
+  right: 17px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-shadow: 0 1px 8px rgba(0,0,0,.9);
+}
+.chat-video-caption strong { font-size: .94rem; color: #f5f2ff; }
+.chat-video-caption span { font-size: .75rem; color: #c2cce0; }
+
+@media (max-width: 1050px) {
+  .chat-workspace { grid-template-columns: 215px minmax(0, 1fr); gap: 16px; }
+  .chat-video-panel { height: 450px; }
+}
+@media (max-width: 780px) {
+  .chat-workspace { display: flex; flex-direction: column; gap: 16px; }
+  .chat-video-panel {
+    align-self: center;
+    width: min(100%, 410px);
+    height: 250px;
+    min-height: 250px;
+    margin: 0;
+  }
+  .chat-avatar-video { object-position: 50% 35%; }
+  .chat-workspace .chat-layout {
+    height: auto;
+    min-height: 620px;
+    max-width: 100%;
+  }
+  .chat-workspace .messages { min-height: 245px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-avatar-video { display: none; }
+  .chat-avatar-video.speaking { transition: none; }
 }

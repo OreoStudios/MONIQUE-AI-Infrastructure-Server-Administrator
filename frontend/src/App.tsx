@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api, type ChatResponse, type Pod, type Status } from "./api";
 import { moniqueAvatar } from "./moniqueAvatar";
 
@@ -16,9 +16,8 @@ const emptyPod = {
 };
 
 /**
- * The decorative scene uses the user's typing footage. Both versions are muted,
- * play inline, and loop natively without replay controls or a visible gap.
- * The dark overlay preserves text contrast over constantly changing frames.
+ * The main Overview (and login) use the original, full-bleed typing video.
+ * Chat has its own compact portrait video with distinct idle/reply states.
  */
 function MoniqueBackdrop() {
   return (
@@ -33,11 +32,76 @@ function MoniqueBackdrop() {
         disablePictureInPicture
         poster={moniqueAvatar}
       >
-        <source src="/media/monique-typing-wide.mp4" type="video/mp4" media="(min-width: 900px)" />
+        {/* Full-bleed background: never select the desktop letterboxed composite.
+            Cover/crop is handled by CSS for every viewport size. */}
         <source src="/media/monique-typing.mp4" type="video/mp4" />
       </video>
       <div className="monique-backdrop-wash" />
     </div>
+  );
+}
+
+/**
+ * MONIQUE's video portrait, positioned beside chat content.
+ * Idle: original typing clip on a native loop.
+ * Reply: the user's talking+typing clip, replayed from the beginning per request.
+ * Both clips are muted: the video does not claim to lip-sync AI-generated text.
+ */
+function MoniqueChatVideo({ isReplying }: { isReplying: boolean }) {
+  const replyRef = useRef<HTMLVideoElement>(null);
+  const [replyAvailable, setReplyAvailable] = useState(true);
+  const showReply = isReplying && replyAvailable;
+
+  useEffect(() => {
+    const video = replyRef.current;
+    if (!video) return;
+    if (showReply) {
+      video.currentTime = 0;
+      void video.play().catch(() => setReplyAvailable(false));
+    } else {
+      video.pause();
+      video.currentTime = 0;
+    }
+  }, [showReply]);
+
+  return (
+    <aside className="chat-video-panel" aria-label="MONIQUE AI animated portrait">
+      <div className="chat-video-stage">
+        <video
+          className="chat-avatar-video idle"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          disablePictureInPicture
+          poster={moniqueAvatar}
+          aria-hidden="true"
+        >
+          <source src="/media/monique-typing.mp4" type="video/mp4" />
+        </video>
+        <video
+          ref={replyRef}
+          className={showReply ? "chat-avatar-video speaking is-visible" : "chat-avatar-video speaking"}
+          muted
+          loop
+          playsInline
+          preload="auto"
+          disablePictureInPicture
+          poster={moniqueAvatar}
+          onError={() => setReplyAvailable(false)}
+          aria-hidden="true"
+        >
+          <source src="/media/monique-typing-speaking.mp4" type="video/mp4" />
+        </video>
+        <div className="chat-video-shade" />
+        <div className="chat-video-topline"><span className="chat-video-pulse" /> MONIQUE AI</div>
+        <div className="chat-video-caption">
+          <strong>{isReplying ? "MONIQUE is responding" : "MONIQUE is ready"}</strong>
+          <span>{isReplying ? "Preparing your answer…" : "Waiting for your message"}</span>
+        </div>
+      </div>
+    </aside>
   );
 }
 
@@ -55,6 +119,7 @@ export default function App() {
   const [view, setView] = useState<View>("overview");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [chatPending, setChatPending] = useState(false);
   const [podForm, setPodForm] = useState(emptyPod);
   const [showPodForm, setShowPodForm] = useState(false);
   const [provider, setProvider] = useState<"CLAUDE" | "CODEX">("CLAUDE");
@@ -158,6 +223,7 @@ export default function App() {
     setPrompt("");
     setMessages((previous) => [...previous, { role: "user", content: text }]);
     setBusy(true);
+    setChatPending(true);
     setError("");
     try {
       const response = await api<ChatResponse>(token, "/ai/chat", {
@@ -178,6 +244,7 @@ export default function App() {
         role: "assistant", content: "The request failed. Check your configured AI provider key and MONIQUE connection.",
       }]);
     } finally {
+      setChatPending(false);
       setBusy(false);
     }
   }
@@ -215,7 +282,7 @@ export default function App() {
 
   return (
     <div className="shell">
-      <MoniqueBackdrop />
+      {view === "overview" && <MoniqueBackdrop />}
       <aside className="sidebar">
         <div className="brand"><div className="logo">M</div><span>MONIQUE <small>AI INFRASTRUCTURE</small></span></div>
         <div className="nav-label">WORKSPACE</div>
@@ -306,7 +373,9 @@ export default function App() {
         )}
 
         {view === "chat" && (
-          <div className="content chat-layout">
+          <div className="chat-workspace">
+            <MoniqueChatVideo isReplying={chatPending} />
+            <div className="content chat-layout">
             <div className="chat-heading"><div><p className="eyebrow">AI INFRASTRUCTURE ASSISTANT</p><h1>Talk to MONIQUE</h1></div><span className="status-chip caution">Planning only</span></div>
             <div className="chat-options"><label>Provider <select value={provider} onChange={(e) => setProvider(e.target.value as "CLAUDE" | "CODEX")}><option value="CLAUDE">Claude</option><option value="CODEX">OpenAI</option></select></label>
               <label>Pod context <select value={selectedPod} onChange={(e) => setSelectedPod(e.target.value)}><option value="">No Pod selected</option>{pods.map((pod) => <option key={pod.id} value={pod.id}>{pod.name}</option>)}</select></label>
@@ -318,7 +387,7 @@ export default function App() {
                   <p>{message.content}</p>
                 </div>
               ))}
-              {busy && <div className="message assistant" aria-live="polite">
+              {chatPending && <div className="message assistant" aria-live="polite">
                 <MoniqueChatAvatar />
                 <p className="typing-indicator" aria-label="MONIQUE is thinking">
                   <span /><span /><span />
@@ -329,6 +398,7 @@ export default function App() {
               <textarea aria-label="Chat with MONIQUE" rows={3} placeholder="Ask MONIQUE to plan a safe server operation…" value={prompt} onChange={(e) => setPrompt(e.target.value)} maxLength={8000} />
               <div className="composer-footer"><span>No commands will be executed.</span><button className="primary" type="submit" disabled={busy || !prompt.trim()}>Send →</button></div>
             </form>
+            </div>
           </div>
         )}
       </main>

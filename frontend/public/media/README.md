@@ -1,16 +1,26 @@
-# MONIQUE frontend motion assets
+# MONIQUE frontend video assets
 
-This directory is intentionally reserved for the user's original **Monique typing** video, adapted for the website.
+The UI uses two user-supplied clips. All video playback is muted, looped, inline and decorative; no AI response audio or speech synchronization is implied.
 
-## Required files to add
+## Existing assets
 
-- `monique-typing-wide.mp4` — 16:9, 1280 × 720 cinematic layout. Displays Monique typing at the right with a dim background for legible app content.
-- `monique-typing.mp4` — 9:16, 540 × 960 portrait layout for mobile.
+- `monique-typing.mp4` — original Monique typing clip (portrait). Used as the full-screen **Overview** background and in the **AI Chat** portrait window while idle.
+- `monique-typing-wide.mp4` — optional legacy desktop composite; no longer used in the interface.
 
-Both are silent H.264 MP4 loops (no audio), produced from the user's provided ten-second clip. They must be uploaded here for the motion background to play. The frontend is intentionally safe without them: it falls back to a dark blue-purple gradient, and the generated MONIQUE portrait is already embedded in `src/moniqueAvatar.ts`.
+## New required asset
 
-The two actual MP4 files are included in the handoff ZIP supplied with the pull request. Upload both MP4s to this folder on the same feature branch before merging the PR, then deploy the new commit using Coolify.
+- `monique-typing-speaking.mp4` — Monique typing and speaking, played while the AI chat request is pending. Derived from the user's uploaded `LOOKING AND TYPING AND SPEAKING.mp4`, optimized as a **540 × 960 H.264 MP4**, muted, ~10 seconds. Source footage is not altered otherwise.
 
-The frontend uses HTML `autoPlay`, `muted`, `loop`, and `playsInline`; it disables video for users requesting reduced motion. The background video remains decorative and never accepts pointer events.
+This new binary must be uploaded into **this exact directory** on the PR branch before merging it. Source code alone does not include the new MP4. If it is missing, the chat panel falls back to the idle video instead of showing a broken element.
 
-Please verify the videos load from the final deployment at `/media/monique-typing-wide.mp4` and `/media/monique-typing.mp4` (HTTP 200), and check Web Console for video decoding errors.
+## Behavior
+
+1. Login and Overview: full-bleed original typing footage behind the interface, dark readable overlay.
+2. Pods: no background video.
+3. Chat idle: original typing footage in the left-hand portrait panel, continuously looping.
+4. Chat request in progress: show the new speaking+typing video, starting at 0 and looping if needed.
+5. Request resolves or fails: return to idle typing footage.
+
+On mobile, the portrait panel stacks above the chat. Users with `prefers-reduced-motion: reduce` do not see autoplaying footage.
+
+Verify GET `/media/monique-typing.mp4` and GET `/media/monique-typing-speaking.mp4` return HTTP 200 on the deployed site after uploading, merging and redeploying via Coolify.
