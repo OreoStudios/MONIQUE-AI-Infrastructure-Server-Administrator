@@ -86,6 +86,8 @@ public class PodService {
 
     @Transactional
     public void delete(UUID id) {
+        if (jdbc.queryForObject("SELECT count(*) FROM command_jobs WHERE pod_id = ?", Integer.class, id) > 0)
+            throw new IllegalArgumentException("This pod has command history and cannot be deleted. Keep it for audit and recovery.");
         int changed = jdbc.update("DELETE FROM pods WHERE id = ?", id);
         if (changed == 0) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Pod not found");
         audit("POD_DELETED", id, "Pod inventory deleted; remote host untouched");

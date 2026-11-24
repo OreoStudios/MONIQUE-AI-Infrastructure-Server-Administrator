@@ -22,6 +22,17 @@ export type ChatResponse = {
   model: string;
   answer: string;
   executed: boolean;
+  jobs?: CommandJob[];
+};
+
+export type CommandJob = {
+  id: string; podId: string; command: string; purpose: string; status: string;
+  timeoutSeconds: number; output: string; exitCode: number | null; createdAt: string;
+};
+
+export type AssistantPreferences = {
+  name: string; language: string; noiseMode: "quiet" | "noisy" | "push_to_talk";
+  allowInterruptions: boolean; workConversation: boolean; ownerVoiceOnly: boolean;
 };
 
 export type AdminSession = {
@@ -136,7 +147,7 @@ async function request<T>(route: string, options: RequestInit = {}): Promise<T> 
         if (body && typeof body === "object" && "code" in body && "message" in body) {
           const issue = body as { code?: unknown; message?: unknown };
           if (typeof issue.code === "string"
-              && /^(OPENAI|ANTHROPIC)_[A-Z_]+$/.test(issue.code)
+              && /^(OPENAI|ANTHROPIC|EXECUTION|PREFERENCES)_[A-Z_]+$/.test(issue.code)
               && typeof issue.message === "string"
               && issue.message.length <= 500) {
             providerMessage = issue.message;

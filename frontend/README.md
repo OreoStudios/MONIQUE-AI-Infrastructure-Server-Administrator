@@ -15,13 +15,15 @@ Open http://127.0.0.1:8088. The Nginx frontend proxies /api to the Spring Boot b
 Enter the MONIQUE_ADMIN_TOKEN from .env into the login form. It is kept **in the browser tab's memory**, not persisted in localStorage/cookies. Current API authentication is a single-admin preview and is **not** paid account/OIDC membership authentication.
 
 Features implemented:
-- Control-plane status, execution-disabled mode and Pod inventory dashboard.
+- Control-plane status, opt-in approved SSH execution and Pod inventory dashboard.
 - Register a Pod with SSH credential, encrypted by MONIQUE's backend.
 - List and remove local Pod inventory records. Removal never changes a remote server.
-- Planning-only Claude/OpenAI chat, with optional selected Pod context.
+- Claude/OpenAI chat with command proposals for the selected pod.
 - Generic API errors without showing provider secrets or SSH credentials.
 
-All remote operations are disabled. Chat suggestions and Pod registration do NOT connect to SSH, verify host keys, deploy software or perform a migration.
+Remote execution is disabled by default. When enabled, approved command jobs connect
+over SSH with pinned host-key verification. Chat and pod registration alone never
+execute commands. See the SSH administration section below for setup and limits.
 
 ## Local frontend development
 
@@ -78,9 +80,94 @@ The new `admin_sessions` table is automatically created by the existing PostgreS
 **Manual verification**: log in, reload the page, enter AI Chat and send multiple messages; refresh again and confirm the dashboard remains authenticated. Restart only the MONIQUE backend and verify the session restores. Test logout, CSRF rejection, admin-token rotation, and automatic return to login on a 401. If the provider returns 502/503, an error appears inside the dashboard without suggesting the administrator session expired.
 
 
+## Conversation preferences and microphone behavior
+
+Open **Settings** to save your preferred name, response language, microphone mode,
+interruption preference and conversation-while-working preference. Settings are
+stored in PostgreSQL for this single-admin installation. Text replies apply changes
+immediately; restart an active voice session to apply saved settings. The name is
+sent to the chosen AI provider as personalization, not identity verification.
+
+Automatic language follows the latest utterance in voice and text, including
+English, French, Spanish and other supported model languages. A fixed language can
+also be selected. Dashboard labels are not translated. Language detection and
+transcription depend on the model and microphone; confirm important technical terms.
+
+Noisy-room mode uses server noise reduction, a stronger speech threshold and browser
+echo cancellation/noise suppression with automatic gain disabled. Automatic speech
+interruptions are off by default. During playback, the outgoing microphone is gated
+unless interruptions are allowed. **Interrupt MONIQUE** deliberately clears playback.
+For noisy rooms, **Push to talk** sends audio only while the button is held (pointer,
+Space or Enter); release commits the turn. Canceling, losing focus or a very short
+press discards it. This improves control but is not a guarantee of noise immunity.
+
+With voice connected, an approved command RUNNING on the selected pod can trigger
+one short friendly question after 20 seconds of conversation inactivity. This needs
+fresh status from the backend and does not include shell output or credentials.
+It never triggers during speech, playback, response generation or microphone/speaker
+mute. **Quiet while working** disables it for the current session. Background SSH
+work remains independent of voice; voice does not execute or approve commands.
+
+**Owner-only speaker verification is not implemented.** The UI explicitly marks it
+unavailable and the API rejects attempts to enable it. No voiceprint is collected.
+A real implementation needs enrollment, a speaker-verification model and an audio
+gate before provider submission; prompting Realtime to recognize a name is not an
+authentication mechanism. Anyone audible to the active microphone may be heard.
+
+Validation includes backend preference/session-payload tests and frontend microphone
+gating/idle-conversation tests (`npm test`). Live acoustic behavior, accents and noise
+levels still need a browser/microphone test after deployment.
+
+## SSH administration with explicit command approval
+
+Text chat now supports real SSH commands through both OpenAI and Claude. Set
+`MONIQUE_EXECUTION_ENABLED=true` as a backend runtime variable in Coolify and rebuild
+both services from this revision. The default remains disabled. Keep one backend
+replica; do not redeploy while jobs are running. Voice remains advisory.
+
+1. Select a registered pod in Chat. Its stored password or unencrypted private key
+   is used only by the backend SSH client. The backend needs network access to the
+   pod's SSH port. Commands run with the stored user's privileges; noninteractive
+   `sudo -n` requires suitable sudo configuration. No password prompts or PTY are supported.
+2. Open the SSH console under chat. From the VPS provider's trusted console, run
+   `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub -E sha256` and save its SHA256
+   fingerprint in MONIQUE. Use the public host key offered by the server. Unknown
+   or changed keys fail closed before authentication. Never copy the private host key.
+3. Ask MONIQUE to inspect OS, resources, ports and existing services before an install
+   or hardening change. Chat creates a pending command card; it does not execute it.
+4. Review the exact command, target, impact and deadline, then approve. All commands,
+   including inspections and manually entered commands, require approval. Approvals
+   expire after 30 minutes and cannot be replayed. One command can run per pod, with
+   up to four workers overall. Commands and results are encrypted in PostgreSQL.
+5. Inspect the actual exit code and console output. Output is capped at 64 KiB and
+   appears after completion, not as a live terminal stream. The result button copies
+   an excerpt into the chat draft: review/redact it before sending it to the provider.
+   MONIQUE can then propose the next step and verification. Output is untrusted data.
+
+The console supports general noninteractive administration, including installation
+steps and audits; it is not a verified one-click Coolify/Pterodactyl installer or an
+unattended agent. The operator must review generated commands. Installation plans
+need current vendor instructions, compatible OS, domains/DNS, backups and conflict
+checks. There is no automated rollback, file-transfer UI, interactive terminal, or
+guarantee that an arbitrary command is safe. Avoid putting secrets in commands or output.
+
+Timeout, disconnect or backend restart can leave a remote command running. Such jobs
+are marked `UNKNOWN`, never automatically retried, and block further execution on
+that pod until the operator inspects it through the provider console and acknowledges
+the outcome. Acknowledgement does not terminate a process or undo changes. Do not
+redeploy, rotate host trust, or change this application's own hosting while running
+an install through it. Pod records with command history cannot be deleted through
+the API; the history is retained for audit. Back up the database and encryption key.
+
+Verification: backend tests include real SSH connections to a disposable in-process
+server (exit status, host-key rejection before authentication, deadlines and output
+limits) plus persistence/approval tests using H2 in PostgreSQL mode. Production
+PostgreSQL schema and container startup are covered by the configured Compose CI
+smoke job; run it before deployment. Live VPS installations require separate staging validation.
+
 ## Advanced OpenAI sysadmin reasoning and provider diagnostics
 
-MONIQUE's OpenAI text chat now defaults to **`gpt-6.2-astra`** with **`reasoning.effort=max`** via the Responses API. The output budget is 16,000 tokens including hidden reasoning tokens. The model gives advanced change-planning guidance, **not actual access to server systems**: the application still has no SSH execution or remote-control tools. Any proposed operations require verified context, impact/risk analysis, backups, rollback, and explicit human approval.
+MONIQUE's OpenAI text chat defaults to **`gpt-6.2-astra`** with **`reasoning.effort=max`** via the Responses API. The output budget is 16,000 tokens including hidden reasoning tokens. With execution enabled, the model can propose SSH commands for approval using the workflow above. Otherwise it provides planning guidance only.
 
 In **Coolify → MONIQUE AI → Environment Variables**, set the following **runtime** values:
 

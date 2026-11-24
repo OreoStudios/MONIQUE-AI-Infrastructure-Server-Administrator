@@ -379,3 +379,20 @@ nav { display: grid; gap: 6px; }
   color: #e8e2ff;
   font-weight: 700;
 }
+/* Commands and remote output remain plain text, including terminal escape sequences. */
+.execution-panel { margin-top: 24px; min-width: 0; }
+.execution-panel details { margin: 12px 0; }
+.execution-panel summary { cursor: pointer; font-weight: 600; }
+.execution-panel label { display: block; margin: 12px 0; }
+.execution-panel textarea, .execution-panel input:not([type="checkbox"]) { width: 100%; }
+.execution-panel input[type="checkbox"] { width: auto; margin-right: 8px; }
+.execution-panel pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 320px; overflow: auto; background: #080e1b; padding: 12px; border-radius: 8px; }
+.execution-panel button { margin: 6px 8px 6px 0; }
+.command-job, .command-review { border: 1px solid #464469; border-radius: 12px; padding: 16px; margin: 16px 0; }
+.command-review { border-color: #a48aff; }
+.chat-workspace .chat-layout.with-execution { height: auto; }
+.chat-workspace .with-execution .messages { flex: none; min-height: 240px; max-height: 55vh; }
+.command-jobs { max-height: 800px; overflow-y: auto; }
+.preferences-form input[type="checkbox"] { width: auto; display: inline-block; margin-right: 8px; }
+.preferences-form > p { color: #aebbd1; line-height: 1.6; }
+.voice-buttons button[aria-pressed="true"] { outline: 2px solid #a48aff; }

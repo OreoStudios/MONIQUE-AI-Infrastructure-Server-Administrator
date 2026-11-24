@@ -15,6 +15,9 @@
   <description>MONIQUE secure AI infrastructure control plane</description>
   <properties><java.version>21</java.version></properties>
   <dependencies>
+    <dependency><groupId>com.github.mwiede</groupId><artifactId>jsch</artifactId><version>2.28.0</version></dependency>
+    <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><scope>test</scope></dependency>
+    <dependency><groupId>org.apache.sshd</groupId><artifactId>sshd-core</artifactId><version>2.20.1</version><scope>test</scope></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-webmvc</artifactId></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-jdbc</artifactId></dependency>

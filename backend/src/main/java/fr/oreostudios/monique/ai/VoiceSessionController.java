@@ -46,6 +46,7 @@ public final class VoiceSessionController {
     private final String model;
     private final String voice;
     private final String safetyIdentifier;
+    private final AssistantPreferences preferences;
 
     // Single-admin preview: limit ephemeral credential minting and API spend.
     private final ArrayDeque<Long> oneMinute = new ArrayDeque<>();
@@ -56,12 +57,14 @@ public final class VoiceSessionController {
             @Value("${OPENAI_API_KEY:}") String apiKey,
             @Value("${monique.voice-model:gpt-realtime-2.1-mini}") String model,
             @Value("${monique.voice-name:marin}") String voice,
-            @Value("${MONIQUE_ADMIN_TOKEN:}") String adminToken) {
+            @Value("${MONIQUE_ADMIN_TOKEN:}") String adminToken,
+            AssistantPreferences preferences) {
         this.client = builder.build();
         this.apiKey = apiKey;
         this.model = model;
         this.voice = voice;
         this.safetyIdentifier = sha256(adminToken);
+        this.preferences = preferences;
     }
 
     @PostMapping(path = "/session", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -71,23 +74,28 @@ public final class VoiceSessionController {
                     "OPENAI_API_KEY is not configured");
         }
         enforceRateLimit();
+        var prefs = preferences.get();
+        var input = new java.util.HashMap<String,Object>();
+        input.put("noise_reduction", Map.of("type", "near_field"));
+        input.put("transcription", Map.of("model", "gpt-realtime-whisper"));
+        input.put("turn_detection", prefs.noiseMode().equals("push_to_talk") ? null : Map.of(
+            "type", "server_vad", "threshold", prefs.noiseMode().equals("noisy") ? 0.85 : 0.6,
+            "prefix_padding_ms", 300, "silence_duration_ms", 900,
+            "create_response", true, "interrupt_response", prefs.allowInterruptions()));
 
         Map<String, Object> config = Map.of(
                 "expires_after", Map.of("anchor", "created_at", "seconds", 60),
                 "session", Map.of(
                         "type", "realtime",
                         "model", model,
-                        "instructions", INSTRUCTIONS,
+                        "instructions", INSTRUCTIONS + AssistantPreferences.instructions(prefs) +
+                            " Ignore non-speech sounds like chairs, clicks, breathing and background noise. Do not answer unintelligible noise. " +
+                            "You may discuss backend job status supplied by the app, but you cannot execute commands through voice. " +
+                            "A running command is not a completed installation. Direct operations to text chat and the approval console.",
                         "output_modalities", List.of("audio"),
                         "max_output_tokens", 800,
                         "audio", Map.of(
-                                "input", Map.of(
-                                        "transcription", Map.of("model", "gpt-realtime-whisper"),
-                                        "turn_detection", Map.of(
-                                                "type", "semantic_vad",
-                                                "eagerness", "auto",
-                                                "create_response", true,
-                                                "interrupt_response", true)),
+                                "input", input,
                                 "output", Map.of("voice", voice)))
         );
         try {
@@ -106,10 +114,10 @@ public final class VoiceSessionController {
                 throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                         "Could not create the realtime voice session");
             }
-            // Return the ephemeral token only, never the upstream session metadata or permanent key.
+            // Return the ephemeral token and applied preferences, never upstream metadata or the permanent key.
             return ResponseEntity.ok()
                     .cacheControl(CacheControl.noStore())
-                    .body(Map.of("value", key));
+                    .body(Map.of("value", key, "preferences", prefs));
         } catch (RestClientResponseException exception) {
             // Do not echo upstream responses, which can contain project/account details.
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,

@@ -9,12 +9,35 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class VoiceSessionControllerTest {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"noisy","quiet","push_to_talk"})
+    void preferencesConfigureNoiseLanguageAndInterruption(String mode) {
+        var builder = RestClient.builder();
+        var server = org.springframework.test.web.client.MockRestServiceServer.bindTo(builder).build();
+        var preferences = org.mockito.Mockito.mock(AssistantPreferences.class);
+        var prefs = new AssistantPreferences.Preferences("Elias","auto",mode,false,true,false);
+        org.mockito.Mockito.when(preferences.get()).thenReturn(prefs);
+        var expectation = server.expect(org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo("https://api.openai.com/v1/realtime/client_secrets"))
+            .andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath("$.session.instructions").value(org.hamcrest.Matchers.containsString("Elias")))
+            .andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath("$.session.instructions").value(org.hamcrest.Matchers.containsString("latest utterance")))
+            .andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath("$.session.audio.input.noise_reduction.type").value("near_field"));
+        if (mode.equals("push_to_talk")) expectation.andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath("$.session.audio.input.turn_detection").value(org.hamcrest.Matchers.nullValue()));
+        else expectation
+            .andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath("$.session.audio.input.turn_detection.interrupt_response").value(false))
+            .andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath("$.session.audio.input.turn_detection.threshold").value(mode.equals("noisy") ? 0.85 : 0.6));
+        expectation.andRespond(org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess("{\"value\":\"ek_test\"}",org.springframework.http.MediaType.APPLICATION_JSON));
+        var controller = new VoiceSessionController(builder,"test-key","gpt-realtime-2.1-mini","marin","test-admin",preferences);
+        var response = controller.createSession();
+        assertEquals(prefs,response.getBody().get("preferences"));
+        assertEquals("no-store",response.getHeaders().getCacheControl());
+        server.verify();
+    }
     @Test
     void missingApiKeyPreventsSessionCreation() {
         var controller = new VoiceSessionController(
                 RestClient.builder(), "",
                 "gpt-realtime-2.1-mini", "marin",
-                "this-is-a-test-admin-token-with-32-plus-characters");
+                "this-is-a-test-admin-token-with-32-plus-characters", org.mockito.Mockito.mock(AssistantPreferences.class));
         var error = assertThrows(ResponseStatusException.class,
                 controller::createSession);
         assertEquals(HttpStatus.SERVICE_UNAVAILABLE, error.getStatusCode());

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { api, loginAdmin, restoreAdmin, logoutAdmin, clearAdminSession, AuthenticationRequiredError, type ChatResponse, type Pod, type Status } from "./api";
+import { api, loginAdmin, restoreAdmin, logoutAdmin, clearAdminSession, AuthenticationRequiredError, type ChatResponse, type Pod, type Status, type CommandJob } from "./api";
 import { moniqueAvatar } from "./moniqueAvatar";
 import VoicePanel from "./VoicePanel";
+import ExecutionPanel from "./ExecutionPanel";
+import PreferencesPanel from "./PreferencesPanel";
 
-type View = "overview" | "pods" | "chat";
+type View = "overview" | "pods" | "chat" | "settings";
 type Message = { role: "assistant" | "user"; content: string };
 
 const emptyPod = {
@@ -127,9 +129,11 @@ export default function App() {
   const [showPodForm, setShowPodForm] = useState(false);
   const [provider, setProvider] = useState<"CLAUDE" | "CODEX">("CLAUDE");
   const [selectedPod, setSelectedPod] = useState("");
+  const [work, setWork] = useState<{ jobs: CommandJob[]; updatedAt: number }>({ jobs: [], updatedAt: 0 });
+  const updateJobs = useCallback((jobs: CommandJob[]) => setWork({ jobs, updatedAt: Date.now() }), []);
   const [prompt, setPrompt] = useState("");
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Hi, I'm MONIQUE. I can help plan infrastructure operations safely. Actual SSH execution is not available in this preview." },
+    { role: "assistant", content: "Hi, I'm MONIQUE. Select a pod to inspect or administer it. When SSH execution is enabled, I can prepare commands for your review and approval." },
   ]);
 
   const recordVoiceTranscript = useCallback((role: Message["role"], content: string) => {
@@ -292,11 +296,12 @@ export default function App() {
           message: text,
           provider,
           podIds: selectedPod ? [selectedPod] : [],
+          history: messages.slice(-8).map(m => ({ role: m.role, content: m.content.slice(0, 2500) })),
         }),
       });
       setMessages((previous) => [...previous, {
         role: "assistant",
-        content: response.answer + (response.executed ? "" : "\n\n[Planning only — nothing was executed]"),
+        content: response.answer,
       }]);
     } catch (err) {
       if (err instanceof AuthenticationRequiredError) {
@@ -307,7 +312,7 @@ export default function App() {
           role: "assistant",
           content: "I couldn't complete that request: " +
             (err instanceof Error ? err.message : "The AI provider is unavailable.") +
-            "\n\n[Planning only — nothing was executed]",
+            "\n\n[No command was executed by this chat request]",
         }]);
       }
     } finally {
@@ -359,35 +364,37 @@ export default function App() {
           <button className={view === "overview" ? "nav active" : "nav"} onClick={() => setView("overview")}>◈ <span>Overview</span></button>
           <button className={view === "pods" ? "nav active" : "nav"} onClick={() => setView("pods")}>▣ <span>Pods</span><em>{pods.length}</em></button>
           <button className={view === "chat" ? "nav active" : "nav"} onClick={() => setView("chat")}>◇ <span>AI Chat</span></button>
+          <button className={view === "settings" ? "nav active" : "nav"} onClick={() => setView("settings")}>S <span>Settings</span></button>
         </nav>
         <div className="sidebar-bottom">
-          <div className="security-note"><span className="dot" /> Planning-only preview<br /><small>Remote execution disabled</small></div>
+          <div className="security-note"><span className="dot" /> {status?.executionEnabled ? "SSH administration" : "Planning-only preview"}<br /><small>{status?.executionEnabled ? "Every command needs approval" : "Remote execution disabled"}</small></div>
           <button className="nav" onClick={disconnect}>↪ <span>Disconnect</span></button>
         </div>
       </aside>
 
       <main className="main">
         <header className="topbar">
-          <span className="breadcrumb">Workspace <span>/</span> {view === "overview" ? "Overview" : view === "pods" ? "Pods" : "MONIQUE Chat"}</span>
+          <span className="breadcrumb">Workspace <span>/</span> {view === "overview" ? "Overview" : view === "pods" ? "Pods" : view === "settings" ? "Settings" : "MONIQUE Chat"}</span>
           <div className="topbar-right"><span className="status-chip"><i /> Control plane connected</span><span className="avatar">OS</span></div>
         </header>
 
         {error && <div className="alert page-alert" role="alert">{error}<button onClick={() => setError("")} aria-label="Dismiss error">×</button></div>}
 
+        {view === "settings" && <PreferencesPanel onSessionExpired={sessionExpired} />}
         {view === "overview" && (
           <div className="content">
             <p className="eyebrow">INFRASTRUCTURE COMMAND CENTER</p>
             <h1>Good to have you here.</h1>
-            <p className="subtitle">MONIQUE keeps your infrastructure inventory organized while you plan safe operations.</p>
+            <p className="subtitle">MONIQUE manages your pod inventory and prepares SSH operations for review.</p>
             <div className="stats">
               <div className="stat-card"><span>Total registered Pods</span><strong>{pods.length}</strong><small>Stored inventory, not live scan</small></div>
               <div className="stat-card"><span>Control plane</span><strong className="smaller">{status?.version ?? "—"}</strong><small>{status?.name ?? "MONIQUE"}</small></div>
-              <div className="stat-card"><span>Execution status</span><strong className="smaller">Disabled</strong><small>{status?.mode ?? "PLANNING_ONLY"}</small></div>
+              <div className="stat-card"><span>Execution status</span><strong className="smaller">{status?.executionEnabled ? "Approval required" : "Disabled"}</strong><small>{status?.mode ?? "PLANNING_ONLY"}</small></div>
             </div>
             <div className="two-cards">
               <section className="panel">
                 <div className="panel-icon">◇</div><h2>Talk to MONIQUE</h2>
-                <p>Ask for installation plans, migration checklists or a risk review. Suggestions require human approval before future execution.</p>
+                <p>Ask for inspections, audits, installations or hardening. Review each proposed command before running it on your VPS.</p>
                 <button className="secondary" onClick={() => setView("chat")}>Open AI Chat →</button>
               </section>
               <section className="panel">
@@ -396,14 +403,14 @@ export default function App() {
                 <button className="secondary" onClick={() => setView("pods")}>Open Pod Manager →</button>
               </section>
             </div>
-            <div className="notice"><strong>Development preview.</strong> The CLI, desktop app, subscriptions and remote execution engine are under active development. Nothing on this page runs SSH commands.</div>
+            <div className="notice"><strong>Development preview.</strong> SSH commands run only after approval when execution is enabled. Voice remains advisory. Installations require preflight checks and verification.</div>
           </div>
         )}
 
         {view === "pods" && (
           <div className="content">
             <p className="eyebrow">YOUR INFRASTRUCTURE</p>
-            <div className="heading-row"><div><h1>Connected Pods</h1><p className="subtitle">Manage the inventory of servers MONIQUE will eventually administer.</p></div>
+            <div className="heading-row"><div><h1>Connected Pods</h1><p className="subtitle">Manage the servers MONIQUE can administer through approved SSH commands.</p></div>
               <button className="primary" onClick={() => setShowPodForm((previous) => !previous)}>{showPodForm ? "Close form" : "+ Add Pod"}</button>
             </div>
             {showPodForm && (
@@ -444,12 +451,13 @@ export default function App() {
         {view === "chat" && (
           <div className="chat-workspace">
             <MoniqueChatVideo isReplying={chatPending || voiceSpeaking} />
-            <div className="content chat-layout">
-            <div className="chat-heading"><div><p className="eyebrow">AI INFRASTRUCTURE ASSISTANT</p><h1>Talk to MONIQUE</h1></div><span className="status-chip caution">Planning only</span></div>
+            <div className={"content chat-layout" + (status?.executionEnabled ? " with-execution" : "")}>
+            <div className="chat-heading"><div><p className="eyebrow">AI INFRASTRUCTURE ASSISTANT</p><h1>Talk to MONIQUE</h1></div><span className="status-chip caution">{status?.executionEnabled ? "SSH approval required" : "Planning only"}</span></div>
             <div className="chat-options"><label>Provider <select value={provider} onChange={(e) => setProvider(e.target.value as "CLAUDE" | "CODEX")}><option value="CLAUDE">Claude</option><option value="CODEX">OpenAI · Advanced Reasoning</option></select></label>
-              <label>Pod context <select value={selectedPod} onChange={(e) => setSelectedPod(e.target.value)}><option value="">No Pod selected</option>{pods.map((pod) => <option key={pod.id} value={pod.id}>{pod.name}</option>)}</select></label>
+              <label>Pod context <select value={selectedPod} disabled={chatPending} onChange={(e) => { setSelectedPod(e.target.value); setMessages([]); setPrompt(""); }}><option value="">No Pod selected</option>{pods.map((pod) => <option key={pod.id} value={pod.id}>{pod.name}</option>)}</select></label>
             </div>
-            <VoicePanel
+            <VoicePanel key={selectedPod}
+              jobs={work.jobs} jobsUpdatedAt={work.updatedAt}
               onSessionExpired={sessionExpired}
               onSpeakingChange={setVoiceSpeaking}
               onTranscript={recordVoiceTranscript}
@@ -469,9 +477,12 @@ export default function App() {
               </div>}
             </div>
             <form className="composer" onSubmit={(e) => void sendChat(e)}>
-              <textarea aria-label="Chat with MONIQUE" rows={3} placeholder="Ask MONIQUE to plan a safe server operation…" value={prompt} onChange={(e) => setPrompt(e.target.value)} maxLength={8000} />
-              <div className="composer-footer"><span>No commands will be executed.</span><button className="primary" type="submit" disabled={busy || !prompt.trim()}>Send →</button></div>
+              <textarea aria-label="Chat with MONIQUE" rows={3} placeholder="Ask MONIQUE to inspect or administer your selected pod..." value={prompt} onChange={(e) => setPrompt(e.target.value)} maxLength={8000} />
+              <div className="composer-footer"><span>{status?.executionEnabled ? "Commands require review and approval." : "SSH execution is disabled."}</span><button className="primary" type="submit" disabled={busy || !prompt.trim()}>Send →</button></div>
             </form>
+            {status?.executionEnabled && selectedPod && pods.find(p => p.id === selectedPod) &&
+              <ExecutionPanel key={selectedPod} pod={pods.find(p => p.id === selectedPod)!}
+                onSessionExpired={sessionExpired} onDiscuss={text => setPrompt(text)} onJobs={updateJobs} />}
             </div>
           </div>
         )}

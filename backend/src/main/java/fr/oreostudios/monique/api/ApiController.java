@@ -15,12 +15,13 @@ import java.util.UUID;
 @RequestMapping("/api")
 public class ApiController {
     private final JdbcTemplate jdbc;
-    public ApiController(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    private final fr.oreostudios.monique.execution.CommandService commands;
+    public ApiController(JdbcTemplate jdbc, fr.oreostudios.monique.execution.CommandService commands) { this.jdbc = jdbc; this.commands = commands; }
 
     @GetMapping("/status")
     public Map<String, Object> status() {
-        return Map.of("name", "MONIQUE", "version", "0.1.0", "mode", "PLANNING_ONLY",
-                      "executionEnabled", false);
+        return Map.of("name", "MONIQUE", "version", "0.2.0", "mode", commands.enabled() ? "APPROVAL_REQUIRED" : "PLANNING_ONLY",
+                      "executionEnabled", commands.enabled());
     }
 
     @GetMapping("/audit")

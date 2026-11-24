@@ -15,9 +15,16 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
 class AiControllerOpenAiTest {
+    private static AssistantPreferences preferences() {
+        var p = org.mockito.Mockito.mock(AssistantPreferences.class);
+        org.mockito.Mockito.when(p.get()).thenReturn(AssistantPreferences.defaults());
+        return p;
+    }
+
     private static AiController controller(RestClient.Builder builder, String key) {
         return new AiController(mock(PodService.class), builder, "",
-                key, "claude-sonnet-4-5", "gpt-6.2-astra", "max", 16000);
+                key, "claude-sonnet-4-5", "gpt-6.2-astra", "max", 16000,
+                mock(fr.oreostudios.monique.execution.CommandService.class), preferences());
     }
 
     @Test
