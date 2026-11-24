@@ -30,7 +30,7 @@ class AiCommandProposalTest {
         var pods = mock(PodService.class);
         UUID pod = UUID.randomUUID();
         when(commands.enabled()).thenReturn(true);
-        when(pods.find(pod)).thenReturn(new PodView(pod,"test","localhost",22,"operator","PASSWORD",true,List.of(),Instant.now()));
+        when(pods.find(pod)).thenReturn(new PodView(pod,"HetznerVPS","192.0.2.10",2222,"operator","PASSWORD",true,List.of(),Instant.now()));
         var job = new CommandService.Job(UUID.randomUUID(),pod,"uname -a","Inspect OS","PENDING",30,"",null,Instant.now().toString());
         when(commands.propose(pod,"uname -a","Inspect OS",30)).thenReturn(job);
         var json = tools.jackson.databind.json.JsonMapper.builder().build();
@@ -42,6 +42,19 @@ class AiCommandProposalTest {
             """;
         server.expect(requestTo(provider.equals("CODEX") ? "https://api.openai.com/v1/responses" : "https://api.anthropic.com/v1/messages"))
             .andExpect(jsonPath("$.tools[0].name").value("propose_command"))
+            .andExpect(request -> {
+                String body = ((org.springframework.mock.http.client.MockClientHttpRequest) request).getBodyAsString();
+                var payload = json.readTree(body);
+                String input = provider.equals("CODEX") ? payload.get("input").asText()
+                    : payload.get("messages").get(0).get("content").asText();
+                assertTrue(input.contains("already selected in the interface"));
+                assertTrue(input.contains("Command proposal target: " + pod));
+                assertTrue(input.contains("\"sshHost\":\"192.0.2.10\""));
+                assertTrue(input.contains("\"sshPort\":2222"));
+                assertTrue(input.contains("\"credentialStored\":true"));
+                assertTrue(input.contains("\"optionalAddressCount\":0"));
+                assertFalse(input.contains("0 configured IPs"));
+            })
             .andRespond(withSuccess(response,MediaType.APPLICATION_JSON));
         var controller = new AiController(pods,builder,"test-key","test-key","claude-sonnet-4-5","gpt-6.2-astra","max",16000,commands,preferences());
         var answer = controller.chat(new AiController.ChatRequest("Inspect my VPS",provider,List.of(pod)));

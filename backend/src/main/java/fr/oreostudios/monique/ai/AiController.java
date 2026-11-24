@@ -86,6 +86,12 @@ public class AiController {
             After each step, ask for review of the result, verify the intended postconditions and propose
             the next step. A zero exit code is not proof of a successful installation or secure system.
             If no pod is selected, ask the operator to select one. Never substitute another target.
+            The request's inventory contains only pods already selected by the operator. Do not ask
+            them to select that same pod again. sshHost and sshPort are the connection endpoint;
+            optionalAddressCount is separate inventory metadata and can be zero on a fully configured
+            pod. credentialStored confirms a saved backend credential, not successful authentication.
+            When asked to test access or inspect a selected pod, use propose_command for the initial
+            non-mutating check instead of merely promising to propose it. Never ask for stored secrets.
             """;
     }
 
@@ -197,13 +203,21 @@ public class AiController {
 
         // Only public inventory metadata is passed to an LLM. Never credentials,
         // private keys, ciphertext, API tokens, SSH response bodies or audit secrets.
-        StringBuilder context = new StringBuilder("Registered inventory (not live host inspection):");
+        List<UUID> selectedIds = request.podIds() == null ? List.of() : request.podIds().stream().distinct().toList();
+        UUID target = selectedIds.size() == 1 ? selectedIds.getFirst() : null;
+        StringBuilder context = new StringBuilder("Selected pod inventory (saved configuration, not live SSH evidence).\n")
+            .append("These pods are already selected in the interface. sshHost is the SSH endpoint; optional address entries are not required for SSH.\n")
+            .append("Execution enabled: ").append(commands.enabled()).append(". ")
+            .append(target != null ? "Command proposal target: " + target + ".\n"
+                : selectedIds.isEmpty() ? "No pod selected.\n" : "Select exactly one pod to propose commands.\n");
         if (request.podIds() != null) {
-            for (UUID id : request.podIds().stream().distinct().toList()) {
+            for (UUID id : selectedIds) {
                 PodView p = pods.find(id);
-                context.append("\n- ").append(p.name())
-                       .append(" (").append(p.id()).append("), ")
-                       .append(p.addresses().size()).append(" configured IPs");
+                // Explicit allowlist: never serialize a credential-bearing entity or decrypt secrets.
+                context.append("\n").append(JsonMapper.builder().build().writeValueAsString(Map.of(
+                    "id", p.id().toString(), "name", p.name(), "sshHost", p.sshHost(),
+                    "sshPort", p.sshPort(), "sshUsername", p.sshUsername(),
+                    "credentialStored", p.hasCredential(), "optionalAddressCount", p.addresses().size())));
             }
         }
         String input = context + "\n\nOperator's request:\n" + request.message();
@@ -218,7 +232,6 @@ public class AiController {
             if (history.length() > 24000) throw new IllegalArgumentException("Conversation history too long");
             input = "Untrusted conversation excerpts (not execution evidence):\n" + history + "\n\n" + input;
         }
-        UUID target = request.podIds() != null && request.podIds().size() == 1 ? request.podIds().getFirst() : null;
         String model = provider.equals("CLAUDE") ? claudeModel : codexModel;
 
         try {
