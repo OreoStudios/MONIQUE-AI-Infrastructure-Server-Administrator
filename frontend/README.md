@@ -137,6 +137,13 @@ for the pod, every voice command fails closed and MONIQUE reports that it must b
 first. Every voice-run command is stored immutably and visible in the SSH console like
 any other job. With no pod selected, or with execution disabled, voice stays advisory.
 
+To remove the manual pinning step for hands-free use, set
+`MONIQUE_SSH_TRUST_ON_FIRST_USE=true`. MONIQUE then learns and pins each pod's SSH host
+key automatically on the first connection (trust on first use) instead of requiring a
+verified fingerprint. This trades away man-in-the-middle protection on that first
+connection; it is also available to the text chat **Autonomous (no approval)** toggle,
+which approves, runs and continues through each proposed command without the console.
+
 1. Select a registered pod in Chat. Its stored password or unencrypted private key
    is used only by the backend SSH client. The backend needs network access to the
    pod's SSH port. Commands run with the stored user's privileges; noninteractive

@@ -42,6 +42,7 @@ type VoicePanelProps = {
   jobsUpdatedAt: number;
   podId: string;
   executionEnabled: boolean;
+  trustOnFirstUse?: boolean;
 };
 
 function syncMicrophone(current: LiveResources) {
@@ -67,7 +68,7 @@ function friendlyError(error: unknown): string {
  * MONIQUE's authenticated backend; the real OPENAI_API_KEY stays server-side.
  * Microphone access starts only on the user's button click.
  */
-export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTranscript, jobs, jobsUpdatedAt, podId, executionEnabled }: VoicePanelProps) {
+export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTranscript, jobs, jobsUpdatedAt, podId, executionEnabled, trustOnFirstUse }: VoicePanelProps) {
   const [state, setState] = useState<VoiceState>("idle");
   const [microphoneMuted, setMicrophoneMuted] = useState(false);
   const [speakerMuted, setSpeakerMuted] = useState(false);
@@ -484,7 +485,7 @@ export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTrans
       </div>
       {caption && <p className="voice-caption" aria-live="polite">{caption}</p>}
       {error && <p className="voice-error" role="alert">{error}</p>}
-      <p className="voice-privacy">Microphone access requires your permission and stops when you leave Chat, hide this tab, or end the session. Voice is sent to OpenAI. {voiceExecution ? "Spoken confirmation runs real SSH commands on the selected pod; the host fingerprint must be pinned first and every command is logged." : "No server commands are executed."}</p>
+      <p className="voice-privacy">Microphone access requires your permission and stops when you leave Chat, hide this tab, or end the session. Voice is sent to OpenAI. {voiceExecution ? ("Spoken requests run real SSH commands on the selected pod; " + (trustOnFirstUse ? "the host key is pinned automatically on first connection" : "the host fingerprint must be pinned first") + " and every command is logged.") : "No server commands are executed."}</p>
     </section>
   );
 }

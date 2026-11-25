@@ -21,7 +21,7 @@ public class ApiController {
     @GetMapping("/status")
     public Map<String, Object> status() {
         return Map.of("name", "MONIQUE", "version", "0.2.0", "mode", commands.enabled() ? "APPROVAL_REQUIRED" : "PLANNING_ONLY",
-                      "executionEnabled", commands.enabled());
+                      "executionEnabled", commands.enabled(), "trustOnFirstUse", commands.trustOnFirstUse());
     }
 
     @GetMapping("/audit")

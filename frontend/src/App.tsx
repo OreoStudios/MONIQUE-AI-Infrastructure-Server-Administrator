@@ -517,7 +517,7 @@ export default function App() {
             </div>
             <VoicePanel key={selectedPod}
               jobs={work.jobs} jobsUpdatedAt={work.updatedAt}
-              podId={selectedPod} executionEnabled={Boolean(status?.executionEnabled)}
+              podId={selectedPod} executionEnabled={Boolean(status?.executionEnabled)} trustOnFirstUse={status?.trustOnFirstUse}
               onSessionExpired={sessionExpired}
               onSpeakingChange={setVoiceSpeaking}
               onTranscript={recordVoiceTranscript}
@@ -541,7 +541,7 @@ export default function App() {
               <div className="composer-footer"><span>{!status?.executionEnabled ? "SSH execution is disabled." : autonomous && selectedPod ? "Autonomous: MONIQUE runs commands without approval (fingerprint pin required)." : "Commands require review and approval."}</span><button className="primary" type="submit" disabled={busy || !prompt.trim()}>Send →</button></div>
             </form>
             {status?.executionEnabled && selectedPod && pods.find(p => p.id === selectedPod) &&
-              <ExecutionPanel key={selectedPod} pod={pods.find(p => p.id === selectedPod)!}
+              <ExecutionPanel key={selectedPod} pod={pods.find(p => p.id === selectedPod)!} trustOnFirstUse={status?.trustOnFirstUse}
                 onSessionExpired={sessionExpired} onDiscuss={text => setPrompt(text)} onJobs={updateJobs} />}
             </div>
           </div>

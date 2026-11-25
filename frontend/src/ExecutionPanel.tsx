@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { api, AuthenticationRequiredError, type CommandJob, type Pod } from "./api";
 
-export default function ExecutionPanel({ pod, onSessionExpired, onDiscuss, onJobs }: {
-  pod: Pod; onSessionExpired: () => void; onDiscuss: (text: string) => void; onJobs: (jobs: CommandJob[]) => void;
+export default function ExecutionPanel({ pod, onSessionExpired, onDiscuss, onJobs, trustOnFirstUse }: {
+  pod: Pod; onSessionExpired: () => void; onDiscuss: (text: string) => void; onJobs: (jobs: CommandJob[]) => void; trustOnFirstUse?: boolean;
 }) {
   const [jobs, setJobs] = useState<CommandJob[]>([]);
   const [fingerprint, setFingerprint] = useState("");
@@ -15,6 +15,9 @@ export default function ExecutionPanel({ pod, onSessionExpired, onDiscuss, onJob
   const [review, setReview] = useState<CommandJob | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const root = "/execution/pods/" + encodeURIComponent(pod.id);
+  // Trust-on-first-use lets commands run before a fingerprint is saved; the host key is
+  // then learned and pinned automatically on the first connection.
+  const canRun = Boolean(pinned) || Boolean(trustOnFirstUse);
 
   useEffect(() => {
     let alive = true;
@@ -52,8 +55,8 @@ export default function ExecutionPanel({ pod, onSessionExpired, onDiscuss, onJob
     <h2>SSH console · {pod.name}</h2>
     <p>{pod.sshUsername}@{pod.sshHost}:{pod.sshPort} · Every command requires your approval.</p>
     {error && <p role="alert" className="alert">{error}</p>}
-    <details open={!pinned}>
-      <summary>{pinned ? "SSH host identity verified by saved fingerprint" : "Set up SSH host verification"}</summary>
+    <details open={!pinned && !trustOnFirstUse}>
+      <summary>{pinned ? "SSH host identity verified by saved fingerprint" : trustOnFirstUse ? "Host key will be pinned automatically on first connection (optional manual verification below)" : "Set up SSH host verification"}</summary>
       <p>In your VPS provider’s trusted console, run this command and copy the SHA256 fingerprint:</p>
       <pre>ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub -E sha256</pre>
       <p>Use the public host key your SSH server offers. Saving a new fingerprint cancels pending proposals.</p>
@@ -78,7 +81,7 @@ export default function ExecutionPanel({ pod, onSessionExpired, onDiscuss, onJob
       <p>{pod.sshUsername}@{pod.sshHost}:{pod.sshPort} · deadline {review.timeoutSeconds}s</p>
       <p>{review.purpose}</p><pre>{review.command}</pre>
       <label><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} /> I approve this exact command on this VPS and understand its impact.</label>
-      <button className="primary" disabled={busy || !confirmed || !pinned} onClick={() => void action("/execution/jobs/" + review.id + "/approve")}>Approve and execute</button>
+      <button className="primary" disabled={busy || !confirmed || !canRun} onClick={() => void action("/execution/jobs/" + review.id + "/approve")}>Approve and execute</button>
       <button className="secondary" disabled={busy} onClick={() => setReview(null)}>Back</button>
     </div>}
     <div className="command-jobs">
@@ -88,7 +91,7 @@ export default function ExecutionPanel({ pod, onSessionExpired, onDiscuss, onJob
         <small> · {new Date(job.createdAt).toLocaleString()}</small>
         <p>{job.purpose}</p><pre>{job.command}</pre>
         {job.status === "PENDING" && <div>
-          <button className="primary" disabled={busy || !pinned} onClick={() => { setReview(job); setConfirmed(false); }}>Review command</button>
+          <button className="primary" disabled={busy || !canRun} onClick={() => { setReview(job); setConfirmed(false); }}>Review command</button>
           <button className="secondary" disabled={busy} onClick={() => void action("/execution/jobs/" + job.id + "/reject")}>Reject</button>
           <small> Approval expires after 30 minutes.</small>
         </div>}
