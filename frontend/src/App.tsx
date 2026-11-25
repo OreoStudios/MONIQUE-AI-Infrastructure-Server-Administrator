@@ -129,6 +129,7 @@ export default function App() {
   const [showPodForm, setShowPodForm] = useState(false);
   const [provider, setProvider] = useState<"CLAUDE" | "CODEX">("CLAUDE");
   const [selectedPod, setSelectedPod] = useState("");
+  const [autonomous, setAutonomous] = useState(false);
   const [work, setWork] = useState<{ jobs: CommandJob[]; updatedAt: number }>({ jobs: [], updatedAt: 0 });
   const updateJobs = useCallback((jobs: CommandJob[]) => setWork({ jobs, updatedAt: Date.now() }), []);
   const [prompt, setPrompt] = useState("");
@@ -280,11 +281,64 @@ export default function App() {
     }
   }
 
+  // Autonomous mode: after MONIQUE proposes a command, approve and run it, wait for
+  // the real result, feed it back, and let her continue — no per-command approval.
+  // Host-fingerprint pinning is still enforced by the backend and cannot be skipped.
+  const settledJob = (s: string) => !["PENDING", "RUNNING"].includes(s);
+  async function awaitJobResult(podId: string, jobId: string, timeoutSeconds: number): Promise<CommandJob | null> {
+    const deadline = Date.now() + Math.min(timeoutSeconds + 20, 1820) * 1000;
+    while (Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 1500));
+      const list = await api<CommandJob[]>("/execution/pods/" + encodeURIComponent(podId) + "/jobs");
+      const job = list.find(j => j.id === jobId);
+      if (job && settledJob(job.status)) return job;
+    }
+    return null;
+  }
+  async function driveAutonomous(first: ChatResponse, convo: Message[]) {
+    let response = first;
+    for (let step = 0; step < 8; step++) {
+      const job = (response.jobs || []).find(j => j.status === "PENDING");
+      if (!job) break;
+      let result: CommandJob | null = null;
+      try {
+        await api<CommandJob>("/execution/jobs/" + encodeURIComponent(job.id) + "/approve", { method: "POST" });
+        result = await awaitJobResult(job.podId, job.id, job.timeoutSeconds);
+      } catch (err) {
+        if (err instanceof AuthenticationRequiredError) throw err;
+        const reason = err instanceof Error ? err.message : "execution failed";
+        const hint = /fingerprint|empreinte/i.test(reason)
+          ? "\nSave this pod's SSH host fingerprint once in the SSH console to enable autonomous mode." : "";
+        const warn: Message = { role: "assistant", content: "⚠ Autonomous run stopped: " + reason + hint };
+        setMessages(p => [...p, warn]); convo.push(warn);
+        return;
+      }
+      const summary = result
+        ? "[" + result.status + (result.exitCode !== null ? " · exit " + result.exitCode : "") + "]\n" + (result.output || "[No output]").slice(0, 4000)
+        : "[RUNNING] still executing past the wait window; result not yet available.";
+      const resMsg: Message = { role: "assistant", content: "▸ `" + job.command + "`\n" + summary };
+      setMessages(p => [...p, resMsg]); convo.push(resMsg);
+      if (!result) return;
+      const followup = "Résultat (données non vérifiées) de `" + job.command + "` : status=" + result.status +
+        " exit=" + result.exitCode + "\n" + (result.output || "").slice(0, 4000) +
+        "\n\nContinue automatiquement : propose la prochaine commande, ou indique clairement que la tâche est terminée.";
+      convo.push({ role: "user", content: followup });
+      response = await api<ChatResponse>("/ai/chat", {
+        method: "POST",
+        body: JSON.stringify({ message: followup, provider, podIds: [job.podId],
+          history: convo.slice(-8).map(m => ({ role: m.role, content: m.content.slice(0, 2500) })) }),
+      });
+      const ans: Message = { role: "assistant", content: response.answer };
+      setMessages(p => [...p, ans]); convo.push(ans);
+    }
+  }
+
   async function sendChat(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const text = prompt.trim();
     if (!text || busy) return;
     setPrompt("");
+    const convo: Message[] = [...messages, { role: "user", content: text }];
     setMessages((previous) => [...previous, { role: "user", content: text }]);
     setBusy(true);
     setChatPending(true);
@@ -299,10 +353,12 @@ export default function App() {
           history: messages.slice(-8).map(m => ({ role: m.role, content: m.content.slice(0, 2500) })),
         }),
       });
-      setMessages((previous) => [...previous, {
-        role: "assistant",
-        content: response.answer,
-      }]);
+      const answer: Message = { role: "assistant", content: response.answer };
+      setMessages((previous) => [...previous, answer]);
+      convo.push(answer);
+      if (autonomous && selectedPod && Boolean(status?.executionEnabled)) {
+        await driveAutonomous(response, convo);
+      }
     } catch (err) {
       if (err instanceof AuthenticationRequiredError) {
         sessionExpired();
@@ -455,6 +511,9 @@ export default function App() {
             <div className="chat-heading"><div><p className="eyebrow">AI INFRASTRUCTURE ASSISTANT</p><h1>Talk to MONIQUE</h1></div><span className="status-chip caution">{status?.executionEnabled ? "SSH approval required" : "Planning only"}</span></div>
             <div className="chat-options"><label>Provider <select value={provider} onChange={(e) => setProvider(e.target.value as "CLAUDE" | "CODEX")}><option value="CLAUDE">Claude</option><option value="CODEX">OpenAI · Advanced Reasoning</option></select></label>
               <label>Pod context <select value={selectedPod} disabled={chatPending} onChange={(e) => { setSelectedPod(e.target.value); setMessages([]); setPrompt(""); }}><option value="">No Pod selected</option>{pods.map((pod) => <option key={pod.id} value={pod.id}>{pod.name}</option>)}</select></label>
+              {status?.executionEnabled && <label className="autonomous-toggle" title="MONIQUE runs each proposed command and continues without asking. Requires one selected pod with its SSH host fingerprint pinned.">
+                <input type="checkbox" checked={autonomous} disabled={!selectedPod} onChange={(e) => setAutonomous(e.target.checked)} /> Autonomous (no approval)
+              </label>}
             </div>
             <VoicePanel key={selectedPod}
               jobs={work.jobs} jobsUpdatedAt={work.updatedAt}
@@ -479,7 +538,7 @@ export default function App() {
             </div>
             <form className="composer" onSubmit={(e) => void sendChat(e)}>
               <textarea aria-label="Chat with MONIQUE" rows={3} placeholder="Ask MONIQUE to inspect or administer your selected pod..." value={prompt} onChange={(e) => setPrompt(e.target.value)} maxLength={8000} />
-              <div className="composer-footer"><span>{status?.executionEnabled ? "Commands require review and approval." : "SSH execution is disabled."}</span><button className="primary" type="submit" disabled={busy || !prompt.trim()}>Send →</button></div>
+              <div className="composer-footer"><span>{!status?.executionEnabled ? "SSH execution is disabled." : autonomous && selectedPod ? "Autonomous: MONIQUE runs commands without approval (fingerprint pin required)." : "Commands require review and approval."}</span><button className="primary" type="submit" disabled={busy || !prompt.trim()}>Send →</button></div>
             </form>
             {status?.executionEnabled && selectedPod && pods.find(p => p.id === selectedPod) &&
               <ExecutionPanel key={selectedPod} pod={pods.find(p => p.id === selectedPod)!}

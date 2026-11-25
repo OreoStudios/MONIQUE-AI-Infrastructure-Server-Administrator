@@ -452,7 +452,7 @@ export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTrans
   return (
     <section className="voice-panel" aria-label="Live voice conversation">
       <div className="voice-heading">
-        <div><strong>Live voice with MONIQUE</strong><span>Two-way OpenAI Realtime conversation · {voiceExecution ? "spoken SSH execution armed" : executionEnabled ? "select one pod to arm SSH" : "planning only"}</span></div>
+        <div><strong>Live voice with MONIQUE</strong><span>Two-way OpenAI Realtime conversation · {voiceExecution ? "spoken SSH execution armed" : !executionEnabled ? "planning only" : podId ? "start voice to operate the selected pod" : "select one pod to arm SSH"}</span></div>
         <span className={"voice-status " + state} aria-live="polite">
           {state === "idle" ? "Offline" : state === "connecting" ? "Connecting…" : microphoneMuted ? "Microphone muted" : manual ? (holding ? "Listening" : "Push to talk") : "Connected"}
         </span>
