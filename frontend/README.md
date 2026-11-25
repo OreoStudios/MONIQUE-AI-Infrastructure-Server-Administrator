@@ -123,7 +123,19 @@ levels still need a browser/microphone test after deployment.
 Text chat now supports real SSH commands through both OpenAI and Claude. Set
 `MONIQUE_EXECUTION_ENABLED=true` as a backend runtime variable in Coolify and rebuild
 both services from this revision. The default remains disabled. Keep one backend
-replica; do not redeploy while jobs are running. Voice remains advisory.
+replica; do not redeploy while jobs are running.
+
+### Autonomous voice execution
+
+When execution is enabled **and exactly one pod is selected in Chat**, the live voice
+session is granted a `run_command` tool and operates that pod autonomously: spoken
+requests are proposed, approved and run over SSH in one step, and MONIQUE reads back the
+real exit code and output. Selecting the pod is the authorization — voice does not ask
+for a separate per-command confirmation. The host-fingerprint pin below is still
+mandatory (it is anti-MITM host verification, not an approval gate): until it is saved
+for the pod, every voice command fails closed and MONIQUE reports that it must be pinned
+first. Every voice-run command is stored immutably and visible in the SSH console like
+any other job. With no pod selected, or with execution disabled, voice stays advisory.
 
 1. Select a registered pod in Chat. Its stored password or unencrypted private key
    is used only by the backend SSH client. The backend needs network access to the
