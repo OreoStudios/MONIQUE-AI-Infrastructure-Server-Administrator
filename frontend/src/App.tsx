@@ -458,6 +458,7 @@ export default function App() {
             </div>
             <VoicePanel key={selectedPod}
               jobs={work.jobs} jobsUpdatedAt={work.updatedAt}
+              podId={selectedPod} executionEnabled={Boolean(status?.executionEnabled)}
               onSessionExpired={sessionExpired}
               onSpeakingChange={setVoiceSpeaking}
               onTranscript={recordVoiceTranscript}

@@ -10,6 +10,7 @@ type LiveEvent = {
   transcript?: string;
   delta?: string;
   item_id?: string;
+  item?: { type?: string; name?: string; call_id?: string; arguments?: string };
 };
 
 type LiveResources = {
@@ -29,6 +30,8 @@ type LiveResources = {
   lastActivity: number;
   conversationTimer?: number;
   greetedJobs: Set<string>;
+  handledCalls: Set<string>;
+  lastProposedJobId?: string;
 };
 
 type VoicePanelProps = {
@@ -37,6 +40,8 @@ type VoicePanelProps = {
   onTranscript: (role: VoiceRole, transcript: string) => void;
   jobs: CommandJob[];
   jobsUpdatedAt: number;
+  podId: string;
+  executionEnabled: boolean;
 };
 
 function syncMicrophone(current: LiveResources) {
@@ -62,7 +67,7 @@ function friendlyError(error: unknown): string {
  * MONIQUE's authenticated backend; the real OPENAI_API_KEY stays server-side.
  * Microphone access starts only on the user's button click.
  */
-export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTranscript, jobs, jobsUpdatedAt }: VoicePanelProps) {
+export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTranscript, jobs, jobsUpdatedAt, podId, executionEnabled }: VoicePanelProps) {
   const [state, setState] = useState<VoiceState>("idle");
   const [microphoneMuted, setMicrophoneMuted] = useState(false);
   const [speakerMuted, setSpeakerMuted] = useState(false);
@@ -71,6 +76,7 @@ export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTrans
   const [manual, setManual] = useState(false);
   const [holding, setHolding] = useState(false);
   const [workConversation, setWorkConversation] = useState(false);
+  const [voiceExecution, setVoiceExecution] = useState(false);
   const jobsRef = useRef(jobs);
   const jobsUpdatedRef = useRef(jobsUpdatedAt);
   useEffect(() => { jobsRef.current = jobs; jobsUpdatedRef.current = jobsUpdatedAt; }, [jobs, jobsUpdatedAt]);
@@ -136,7 +142,7 @@ export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTrans
       abort: new AbortController(),
       seenTranscripts: new Set(),
       muted: false, talking: false, responseActive: false, userSpeaking: false,
-      pressedAt: 0, lastActivity: Date.now(), greetedJobs: new Set(),
+      pressedAt: 0, lastActivity: Date.now(), greetedJobs: new Set(), handledCalls: new Set(),
     };
     resourcesRef.current = resources;
     setState("connecting");
@@ -151,10 +157,11 @@ export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTrans
       resources.stream = mic;
       if (resourcesRef.current !== resources) { mic.getTracks().forEach(t => t.stop()); return; }
 
-      let data: { value?: unknown; preferences: AssistantPreferences };
+      let data: { value?: unknown; preferences: AssistantPreferences; execution?: boolean };
       try {
-        data = await api<{ value: string; preferences: AssistantPreferences }>("/voice/session", {
+        data = await api<{ value: string; preferences: AssistantPreferences; execution?: boolean }>("/voice/session", {
           method: "POST",
+          body: JSON.stringify({ podId: podId || null }),
           signal: resources.abort.signal,
         });
       } catch (err) {
@@ -174,6 +181,7 @@ export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTrans
       resources.preferences = data.preferences;
       setManual(data.preferences.noiseMode === "push_to_talk");
       setWorkConversation(data.preferences.workConversation);
+      setVoiceExecution(Boolean(data.execution));
       syncMicrophone(resources);
 
       const peer = new RTCPeerConnection();
@@ -192,6 +200,60 @@ export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTrans
 
       const channel = peer.createDataChannel("oai-events");
       resources.channel = channel;
+
+      // A voice run_command call is routed to MONIQUE's authenticated backend, which
+      // proposes, approves and runs the command over SSH, then polls for the real
+      // result. The engine still enforces host-fingerprint pinning and immutable audit;
+      // the operator granted standing authorization by selecting this pod.
+      const settled = (status: string) => !["PENDING", "RUNNING"].includes(status);
+      const awaitResult = async (jobId: string, timeoutSeconds: number): Promise<CommandJob | null> => {
+        const deadline = Date.now() + Math.min(timeoutSeconds + 20, 1820) * 1000;
+        while (Date.now() < deadline) {
+          await new Promise(r => setTimeout(r, 1500));
+          if (resourcesRef.current !== resources) return null;
+          const list = await api<CommandJob[]>("/execution/pods/" + encodeURIComponent(podId) + "/jobs");
+          const job = list.find(j => j.id === jobId);
+          if (job && settled(job.status)) return job;
+        }
+        return null;
+      };
+      const runTool = async (item: NonNullable<LiveEvent["item"]>) => {
+        const callId = item.call_id;
+        if (!callId || item.type !== "function_call" || resources.handledCalls.has(callId)) return;
+        resources.handledCalls.add(callId);
+        let output: Record<string, unknown>;
+        try {
+          if (item.name !== "run_command") { output = { error: "Unknown tool." }; }
+          else if (!podId) { output = { error: "No pod is selected, so no command can run." }; }
+          else {
+            const args = JSON.parse(item.arguments || "{}") as Record<string, unknown>;
+            const timeoutSeconds = typeof args.timeout_seconds === "number" ? args.timeout_seconds : 300;
+            const proposed = await api<CommandJob>("/execution/jobs", {
+              method: "POST",
+              body: JSON.stringify({ podId, command: args.command, purpose: args.purpose, timeoutSeconds }),
+            });
+            resources.lastProposedJobId = proposed.id;
+            await api<CommandJob>("/execution/jobs/" + encodeURIComponent(proposed.id) + "/approve", { method: "POST" });
+            const done = await awaitResult(proposed.id, timeoutSeconds);
+            if (resourcesRef.current !== resources) return;
+            output = done
+              ? { status: done.status, exit_code: done.exitCode, job_id: done.id,
+                  output: (done.output || "[No output]").slice(0, 6000) }
+              : { status: "RUNNING", job_id: proposed.id,
+                  message: "Still running past the wait window. Do not claim success; tell the operator it is still in progress." };
+          }
+        } catch (err) {
+          if (err instanceof AuthenticationRequiredError) { stop(); onSessionExpired(); return; }
+          output = { error: err instanceof Error ? err.message : "The command request failed." };
+        }
+        if (resourcesRef.current !== resources || channel.readyState !== "open") return;
+        channel.send(JSON.stringify({ type: "conversation.item.create",
+          item: { type: "function_call_output", call_id: callId, output: JSON.stringify(output) } }));
+        channel.send(JSON.stringify({ type: "response.create" }));
+        resources.lastActivity = Date.now();
+        resources.responseActive = true;
+      };
+
       channel.onopen = () => {
         if (resourcesRef.current === resources) {
           setState("connected");
@@ -250,6 +312,9 @@ export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTrans
           case "response.done":
             resources.responseActive = false;
             resources.lastActivity = Date.now();
+            break;
+          case "response.output_item.done":
+            if (event.item?.type === "function_call") void runTool(event.item);
             break;
           case "response.output_audio_transcript.delta":
             if (typeof event.delta === "string") setCaption(previous => (previous + event.delta).slice(-1000));
@@ -327,7 +392,7 @@ export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTrans
         setError(message);
       }
     }
-  }, [onSessionExpired, onTranscript, onSpeakingChange, stop]);
+  }, [onSessionExpired, onTranscript, onSpeakingChange, stop, podId]);
 
   function toggleMic() {
     const current = resourcesRef.current;
@@ -387,7 +452,7 @@ export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTrans
   return (
     <section className="voice-panel" aria-label="Live voice conversation">
       <div className="voice-heading">
-        <div><strong>Live voice with MONIQUE</strong><span>Two-way OpenAI Realtime conversation · planning only</span></div>
+        <div><strong>Live voice with MONIQUE</strong><span>Two-way OpenAI Realtime conversation · {voiceExecution ? "spoken SSH execution armed" : executionEnabled ? "select one pod to arm SSH" : "planning only"}</span></div>
         <span className={"voice-status " + state} aria-live="polite">
           {state === "idle" ? "Offline" : state === "connecting" ? "Connecting…" : microphoneMuted ? "Microphone muted" : manual ? (holding ? "Listening" : "Push to talk") : "Connected"}
         </span>
@@ -419,7 +484,7 @@ export default function VoicePanel({ onSessionExpired, onSpeakingChange, onTrans
       </div>
       {caption && <p className="voice-caption" aria-live="polite">{caption}</p>}
       {error && <p className="voice-error" role="alert">{error}</p>}
-      <p className="voice-privacy">Microphone access requires your permission and stops when you leave Chat, hide this tab, or end the session. Voice is sent to OpenAI. No server commands are executed.</p>
+      <p className="voice-privacy">Microphone access requires your permission and stops when you leave Chat, hide this tab, or end the session. Voice is sent to OpenAI. {voiceExecution ? "Spoken confirmation runs real SSH commands on the selected pod; the host fingerprint must be pinned first and every command is logged." : "No server commands are executed."}</p>
     </section>
   );
 }
