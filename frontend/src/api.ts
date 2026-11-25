@@ -15,6 +15,7 @@ export type Status = {
   version: string;
   mode: string;
   executionEnabled: boolean;
+  trustOnFirstUse?: boolean;
 };
 
 export type ChatResponse = {

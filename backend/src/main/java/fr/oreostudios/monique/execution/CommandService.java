@@ -19,14 +19,18 @@ public class CommandService {
     private final SshExecutor ssh;
     private final TransactionTemplate tx;
     private final boolean enabled;
+    private final boolean trustOnFirstUse;
     private final ExecutorService workers = Executors.newFixedThreadPool(4);
     private final Semaphore slots = new Semaphore(4);
 
     public CommandService(JdbcTemplate jdbc, SecretCipher cipher, SshExecutor ssh,
-                          TransactionTemplate tx, @Value("${MONIQUE_EXECUTION_ENABLED:false}") boolean enabled) {
+                          TransactionTemplate tx, @Value("${MONIQUE_EXECUTION_ENABLED:false}") boolean enabled,
+                          @Value("${MONIQUE_SSH_TRUST_ON_FIRST_USE:false}") boolean trustOnFirstUse) {
         this.jdbc = jdbc; this.cipher = cipher; this.ssh = ssh; this.tx = tx; this.enabled = enabled;
+        this.trustOnFirstUse = trustOnFirstUse;
     }
     public boolean enabled() { return enabled; }
+    public boolean trustOnFirstUse() { return trustOnFirstUse; }
     private void requireEnabled() { if (!enabled) throw new IllegalArgumentException("Enable MONIQUE_EXECUTION_ENABLED in the backend before running SSH commands."); }
     public record Job(UUID id, UUID podId, String command, String purpose, String status,
                       int timeoutSeconds, String output, Integer exitCode, String createdAt) { }
@@ -107,7 +111,7 @@ public class CommandService {
                 var t = jdbc.queryForObject("SELECT * FROM pods WHERE id = ?", (rs,n) -> new SshExecutor.Target(
                     rs.getString("ssh_host"),rs.getInt("ssh_port"),rs.getString("ssh_username"),rs.getString("credential_type"),
                     cipher.decrypt(job.podId(),rs.getString("secret_ciphertext")),rs.getString("ssh_fingerprint")), job.podId());
-                if (t.fingerprint() == null) throw new IllegalArgumentException("Verify and save the SSH host fingerprint first.");
+                if (t.fingerprint() == null && !trustOnFirstUse) throw new IllegalArgumentException("Verify and save the SSH host fingerprint first.");
                 if (jdbc.update("UPDATE command_jobs SET status = 'RUNNING' WHERE id = ? AND status = 'PENDING' AND created_at > ?", id, OffsetDateTime.now().minusMinutes(30)) != 1)
                     throw new IllegalArgumentException("Command already handled or approval expired (30 minutes). Create a new proposal.");
                 audit(job.podId(), "COMMAND_APPROVED", "Approved exact command " + id);
@@ -118,6 +122,10 @@ public class CommandService {
                 try {
                     var result = ssh.run(target, job.command(), job.timeoutSeconds());
                     tx.executeWithoutResult(s -> {
+                        // Trust on first use: pin the host key captured on this first connection.
+                        if (result.learnedFingerprint() != null
+                            && jdbc.update("UPDATE pods SET ssh_fingerprint = ? WHERE id = ? AND ssh_fingerprint IS NULL", result.learnedFingerprint(), job.podId()) == 1)
+                            audit(job.podId(), "SSH_HOST_PINNED", "Host fingerprint learned on first connection (trust on first use)");
                         String output = result.output().replace(target.credential(), "[REDACTED]");
                         jdbc.update("UPDATE command_jobs SET status = ?, output_ciphertext = ?, exit_code = ?, finished_at = NOW() WHERE id = ? AND status = 'RUNNING'",
                             result.status(), cipher.encrypt(id, output.isBlank() ? "[No output]" : output), result.exitCode(), id);

@@ -19,9 +19,10 @@ class CommandServiceTest {
     CommandService service;
     SshExecutor ssh;
     UUID pod;
+    DriverManagerDataSource source;
     String pin = "SHA256:" + "A".repeat(43);
     @BeforeEach void setup() throws Exception {
-        var source = new DriverManagerDataSource("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "");
+        source = new DriverManagerDataSource("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "");
         jdbc = new JdbcTemplate(source);
         String schema;
         try (var in = getClass().getResourceAsStream("/schema.sql")) { schema = new String(in.readAllBytes(), StandardCharsets.UTF_8); }
@@ -30,7 +31,7 @@ class CommandServiceTest {
         for (String sql : schema.split(";")) if (!sql.isBlank()) jdbc.execute(sql);
         var cipher = new SecretCipher(Base64.getEncoder().encodeToString(new byte[32]));
         ssh = mock(SshExecutor.class);
-        service = new CommandService(jdbc,cipher,ssh,new TransactionTemplate(new JdbcTransactionManager(source)),true);
+        service = new CommandService(jdbc,cipher,ssh,new TransactionTemplate(new JdbcTransactionManager(source)),true,false);
         pod = UUID.randomUUID();
         jdbc.update("INSERT INTO pods(id,name,ssh_host,ssh_port,ssh_username,credential_type,secret_ciphertext) VALUES (?,?,?,?,?,?,?)",
             pod,"test","127.0.0.1",22,"operator","PASSWORD",cipher.encrypt(pod,"secret-password"));
@@ -66,6 +67,18 @@ class CommandServiceTest {
         assertEquals("done [REDACTED]",service.get(first.id()).output());
         assertThrows(IllegalArgumentException.class, () -> service.approve(first.id()));
         verify(ssh,times(1)).run(any(),eq("echo hello"),eq(30));
+    }
+
+    @Test void trustOnFirstUseRunsWithoutPinAndLearnsHostKey() throws Exception {
+        var tofu = new CommandService(jdbc,new SecretCipher(Base64.getEncoder().encodeToString(new byte[32])),ssh,
+            new TransactionTemplate(new JdbcTransactionManager(source)),true,true);
+        try {
+            when(ssh.run(any(),anyString(),anyInt())).thenReturn(new SshExecutor.Result("SUCCEEDED",0,"ok","SHA256:"+"a".repeat(43)));
+            var job = tofu.propose(pod,"hostname","Inspect",30);
+            assertEquals("RUNNING", tofu.approve(job.id()).status());
+            await().atMost(Duration.ofSeconds(5)).until(() -> tofu.get(job.id()).status().equals("SUCCEEDED"));
+            assertEquals("SHA256:"+"a".repeat(43), jdbc.queryForObject("SELECT ssh_fingerprint FROM pods WHERE id = ?",String.class,pod));
+        } finally { tofu.close(); }
     }
 
     @Test void rejectedExpiredAndUnknownJobsCannotRunAgain() {
